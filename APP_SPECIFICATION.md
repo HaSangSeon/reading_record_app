@@ -346,3 +346,15 @@ lib/
    - 도서 삭제 시 `HiveNoteRepository.deleteNotesByBookId()`가 자동 호출되어 고아 데이터(Orphaned notes)가 남지 않도록 보장.
 4. **반응형 스트림 최적화**:
    - Hive `box.watch()`의 초기 이벤트 부재 문제를 `async*` 제너레이터를 통해 캐시 데이터를 즉시 방출(`yield`)하도록 설계하여 첫 로딩 시 깜빡임이나 무한 로딩이 발생하지 않음.
+
+---
+
+## 7. 테마 시스템 (Dark & Light Theme Mode)
+
+- **프리미엄 딥 슬레이트 다크 테마**:
+  - 배경: Slate 900 (`#0F172A`), 카드/시트: Slate 800 (`#1E293B`), 테두리: Slate 700 (`#334155`), 포인트: Indigo 400 (`#818CF8`)
+- **영구 저장 & 동기화 (`ThemeController`)**:
+  - Riverpod `StateNotifier`와 Hive `settings_box`를 연동하여 앱 재실행 시에도 선택된 테마(`light`, `dark`, `system`)를 유지.
+- **다양한 테마 전환 컨트롤**:
+  - 홈 화면 상단 AppBar: 원터치 즉시 토글 버튼 (`☀️` / `🌙`).
+  - 설정 화면: 3가지 모드 세그먼트 버튼 (`[라이트]`, `[다크]`, `[시스템]`).
