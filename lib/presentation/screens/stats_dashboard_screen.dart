@@ -12,16 +12,21 @@ class StatsDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final booksAsync = ref.watch(allBooksStreamProvider);
     final notesAsync = ref.watch(allNotesStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.insights_rounded, color: AppTheme.primaryColor, size: 26),
-            SizedBox(width: 8),
-            Text('독서 통계 & 리포트'),
+            Icon(
+              Icons.insights_rounded,
+              color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+              size: 26,
+            ),
+            const SizedBox(width: 8),
+            const Text('독서 통계 & 리포트'),
           ],
         ),
       ),
@@ -48,27 +53,41 @@ class StatsDashboardScreen extends ConsumerWidget {
     List<Book> books,
     List<Note> notes,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (books.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bar_chart_rounded, size: 56, color: AppTheme.textLight),
-              SizedBox(height: 16),
+              Icon(
+                Icons.bar_chart_rounded,
+                size: 56,
+                color: (isDark ? AppTheme.darkTextLight : AppTheme.textLight)
+                    .withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 16),
               Text(
                 '아직 등록된 도서가 없습니다.',
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
                 '책을 등록하고 독서 기록을 남기면\n다양한 통계 리포트가 제공됩니다.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.textSecondary,
+                ),
               ),
             ],
           ),
@@ -111,6 +130,7 @@ class StatsDashboardScreen extends ConsumerWidget {
 
           // 2. 완독 현황 게이지 카드
           _buildCompletionStatusCard(
+            context: context,
             totalBooks: totalBooks,
             completedBooks: completedBooks,
             readingBooks: readingBooks,
@@ -120,7 +140,7 @@ class StatsDashboardScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // 3. 월별 독서량 차트 (지난 6개월)
-          _buildMonthlyReadingChart(books),
+          _buildMonthlyReadingChart(context, books),
 
           const SizedBox(height: 20),
 
@@ -267,22 +287,28 @@ class StatsDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildCompletionStatusCard({
+    required BuildContext context,
     required int totalBooks,
     required int completedBooks,
     required int readingBooks,
     required int completionRate,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
+      color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: AppTheme.borderColor),
+        side: BorderSide(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
@@ -290,7 +316,9 @@ class StatsDashboardScreen extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: isDark
+                        ? AppTheme.darkTextPrimary
+                        : AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -310,7 +338,11 @@ class StatsDashboardScreen extends ConsumerWidget {
                     if (readingBooks > 0)
                       Expanded(
                         flex: readingBooks,
-                        child: Container(color: AppTheme.primaryColor),
+                        child: Container(
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                       ),
                   ],
                 ),
@@ -333,10 +365,12 @@ class StatsDashboardScreen extends ConsumerWidget {
                     const SizedBox(width: 6),
                     Text(
                       '완독 $completedBooks권 ($completionRate%)',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
                       ),
                     ),
                   ],
@@ -346,18 +380,22 @@ class StatsDashboardScreen extends ConsumerWidget {
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.primaryColor,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '읽는 중 $readingBooks권 (${100 - completionRate}%)',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
                       ),
                     ),
                   ],
@@ -370,7 +408,9 @@ class StatsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthlyReadingChart(List<Book> books) {
+  Widget _buildMonthlyReadingChart(BuildContext context, List<Book> books) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // 지난 6개월간의 월별 완독 권수 집계
     final now = DateTime.now();
     final months = List.generate(6, (i) {
@@ -390,26 +430,35 @@ class StatsDashboardScreen extends ConsumerWidget {
         counts.fold<int>(1, (max, c) => c > max ? c : max).clamp(1, 999);
 
     return Card(
+      color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: AppTheme.borderColor),
+        side: BorderSide(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.calendar_month_rounded,
-                    color: AppTheme.primaryColor, size: 20),
-                SizedBox(width: 8),
+                Icon(
+                  Icons.calendar_month_rounded,
+                  color:
+                      isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   '최근 6개월 완독 추이 📈',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: isDark
+                        ? AppTheme.darkTextPrimary
+                        : AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -431,10 +480,12 @@ class StatsDashboardScreen extends ConsumerWidget {
                       children: [
                         Text(
                           count > 0 ? '$count권' : '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -446,11 +497,17 @@ class StatsDashboardScreen extends ConsumerWidget {
                               colors: count > 0
                                   ? [
                                       AppTheme.primaryLight,
-                                      AppTheme.primaryColor
+                                      isDark
+                                          ? AppTheme.primaryColor
+                                          : AppTheme.primaryDark,
                                     ]
                                   : [
-                                      AppTheme.borderColor,
-                                      AppTheme.borderColor
+                                      isDark
+                                          ? AppTheme.darkBorder
+                                          : AppTheme.borderColor,
+                                      isDark
+                                          ? AppTheme.darkBorder
+                                          : AppTheme.borderColor,
                                     ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
@@ -467,8 +524,12 @@ class StatsDashboardScreen extends ConsumerWidget {
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                             color: index == 5
-                                ? AppTheme.primaryColor
-                                : AppTheme.textSecondary,
+                                ? (isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor)
+                                : (isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary),
                           ),
                         ),
                       ],
@@ -484,6 +545,7 @@ class StatsDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildTopRatedBooksCard(BuildContext context, List<Book> books) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final topBooks = books.where((b) => b.rating >= 4.0).toList()
       ..sort((a, b) => b.rating.compareTo(a.rating));
 
@@ -492,25 +554,31 @@ class StatsDashboardScreen extends ConsumerWidget {
     }
 
     return Card(
+      color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: AppTheme.borderColor),
+        side: BorderSide(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.favorite_rounded, color: Colors.redAccent, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.favorite_rounded,
+                    color: Colors.redAccent, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   '인생 도서 & 높은 평점 🏆',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: isDark
+                        ? AppTheme.darkTextPrimary
+                        : AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -531,34 +599,51 @@ class StatsDashboardScreen extends ConsumerWidget {
                   width: 40,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    color: (isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: book.coverUrl != null && book.coverUrl!.isNotEmpty
                       ? Image.network(book.coverUrl!, fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.menu_book_rounded,
-                              size: 20,
-                              color: AppTheme.primaryLight))
-                      : const Icon(Icons.menu_book_rounded,
-                          size: 20, color: AppTheme.primaryLight),
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                                Icons.menu_book_rounded,
+                                size: 20,
+                                color: isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor,
+                              ))
+                      : Icon(
+                          Icons.menu_book_rounded,
+                          size: 20,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                 ),
                 title: Text(
                   book.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: isDark
+                        ? AppTheme.darkTextPrimary
+                        : AppTheme.textPrimary,
                   ),
                 ),
                 subtitle: Text(
                   book.author,
                   maxLines: 1,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -568,10 +653,12 @@ class StatsDashboardScreen extends ConsumerWidget {
                     const SizedBox(width: 2),
                     Text(
                       book.rating.toStringAsFixed(1),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
                       ),
                     ),
                   ],

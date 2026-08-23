@@ -22,39 +22,52 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: AppTheme.borderColor, width: 1),
+            top: BorderSide(
+              color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+              width: 1,
+            ),
           ),
         ),
         child: NavigationBar(
           selectedIndex: _currentIndex,
-          onDestinationSelected: (index) => setState(() => _currentIndex = index),
-          backgroundColor: Colors.white,
-          indicatorColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-          destinations: const [
+          onDestinationSelected: (index) =>
+              setState(() => _currentIndex = index),
+          backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+          indicatorColor: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+              .withValues(alpha: 0.2),
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.menu_book_outlined),
-              selectedIcon:
-                  Icon(Icons.menu_book_rounded, color: AppTheme.primaryColor),
+              icon: const Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(
+                Icons.menu_book_rounded,
+                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+              ),
               label: '내 서재',
             ),
             NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined),
-              selectedIcon:
-                  Icon(Icons.bar_chart_rounded, color: AppTheme.primaryColor),
+              icon: const Icon(Icons.bar_chart_outlined),
+              selectedIcon: Icon(
+                Icons.bar_chart_rounded,
+                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+              ),
               label: '독서 통계',
             ),
             NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon:
-                  Icon(Icons.settings_rounded, color: AppTheme.primaryColor),
+              icon: const Icon(Icons.settings_outlined),
+              selectedIcon: Icon(
+                Icons.settings_rounded,
+                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+              ),
               label: '설정 & 백업',
             ),
           ],

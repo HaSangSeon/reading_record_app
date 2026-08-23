@@ -15,8 +15,18 @@ class BookCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          width: 1,
+        ),
+      ),
       child: InkWell(
         onTap: onTap ??
             () {
@@ -34,7 +44,7 @@ class BookCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 책 표지 이미지 또는 감성적인 대체 커버
-              _buildCoverImage(),
+              _buildCoverImage(context),
               const SizedBox(width: 14),
               // 도서 정보
               Expanded(
@@ -49,10 +59,12 @@ class BookCard extends ConsumerWidget {
                             book.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
                               height: 1.25,
                             ),
                           ),
@@ -66,9 +78,11 @@ class BookCard extends ConsumerWidget {
                       '${book.author}${book.publisher.isNotEmpty ? ' · ${book.publisher}' : ''}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.textSecondary,
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -82,10 +96,12 @@ class BookCard extends ConsumerWidget {
                           const SizedBox(width: 2),
                           Text(
                             book.rating.toStringAsFixed(1),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
                             ),
                           ),
                         ],
@@ -104,17 +120,23 @@ class BookCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildCoverImage() {
+  Widget _buildCoverImage(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: 72,
       height: 104,
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+        color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+            .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.borderColor, width: 1),
+        border: Border.all(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
             blurRadius: 8,
             offset: const Offset(2, 4),
           ),
@@ -125,13 +147,16 @@ class BookCard extends ConsumerWidget {
           ? Image.network(
               book.coverUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _buildFallbackCover(),
+              errorBuilder: (_, _, _) => _buildFallbackCover(context),
             )
-          : _buildFallbackCover(),
+          : _buildFallbackCover(context),
     );
   }
 
-  Widget _buildFallbackCover() {
+  Widget _buildFallbackCover(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -140,7 +165,7 @@ class BookCard extends ConsumerWidget {
             book.isCompleted
                 ? Icons.auto_stories_rounded
                 : Icons.menu_book_rounded,
-            color: AppTheme.primaryColor.withValues(alpha: 0.6),
+            color: primary.withValues(alpha: 0.7),
             size: 32,
           ),
           const SizedBox(height: 4),
@@ -149,7 +174,7 @@ class BookCard extends ConsumerWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: AppTheme.primaryColor.withValues(alpha: 0.8),
+              color: primary.withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -158,6 +183,8 @@ class BookCard extends ConsumerWidget {
   }
 
   Widget _buildProgressBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -169,8 +196,9 @@ class BookCard extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: book.isCompleted
-                    ? AppTheme.successColor.withValues(alpha: 0.12)
-                    : AppTheme.primaryColor.withValues(alpha: 0.1),
+                    ? AppTheme.successColor.withValues(alpha: 0.15)
+                    : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                        .withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -180,7 +208,9 @@ class BookCard extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                   color: book.isCompleted
                       ? AppTheme.successColor
-                      : AppTheme.primaryColor,
+                      : (isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor),
                 ),
               ),
             ),
@@ -189,10 +219,12 @@ class BookCard extends ConsumerWidget {
               book.totalPages > 0
                   ? '${book.readPages} / ${book.totalPages} p'
                   : '${book.readPages} p',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
               ),
             ),
           ],
@@ -203,11 +235,12 @@ class BookCard extends ConsumerWidget {
           child: LinearProgressIndicator(
             value: book.progress,
             minHeight: 6,
-            backgroundColor: AppTheme.borderColor,
+            backgroundColor:
+                isDark ? AppTheme.darkBorder : AppTheme.borderColor,
             valueColor: AlwaysStoppedAnimation<Color>(
               book.isCompleted
                   ? AppTheme.successColor
-                  : AppTheme.primaryColor,
+                  : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor),
             ),
           ),
         ),
@@ -216,10 +249,15 @@ class BookCard extends ConsumerWidget {
   }
 
   Widget _buildPopupMenu(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
-      icon: const Icon(Icons.more_vert_rounded,
-          size: 20, color: AppTheme.textLight),
+      icon: Icon(
+        Icons.more_vert_rounded,
+        size: 20,
+        color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) async {
         switch (value) {
@@ -240,13 +278,17 @@ class BookCard extends ConsumerWidget {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'progress',
           child: Row(
             children: [
-              Icon(Icons.bookmark_add_outlined, size: 18, color: AppTheme.primaryColor),
-              SizedBox(width: 10),
-              Text('진행 페이지 기록', style: TextStyle(fontSize: 14)),
+              Icon(
+                Icons.bookmark_add_outlined,
+                size: 18,
+                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+              ),
+              const SizedBox(width: 10),
+              const Text('진행 페이지 기록', style: TextStyle(fontSize: 14)),
             ],
           ),
         ),
@@ -267,13 +309,19 @@ class BookCard extends ConsumerWidget {
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 18, color: AppTheme.textSecondary),
-              SizedBox(width: 10),
-              Text('도서 정보 수정', style: TextStyle(fontSize: 14)),
+              Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
+              ),
+              const SizedBox(width: 10),
+              const Text('도서 정보 수정', style: TextStyle(fontSize: 14)),
             ],
           ),
         ),
@@ -282,9 +330,11 @@ class BookCard extends ConsumerWidget {
           value: 'delete',
           child: Row(
             children: [
-              Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+              Icon(Icons.delete_outline_rounded,
+                  size: 18, color: Colors.redAccent),
               SizedBox(width: 10),
-              Text('도서 삭제', style: TextStyle(fontSize: 14, color: Colors.redAccent)),
+              Text('도서 삭제',
+                  style: TextStyle(fontSize: 14, color: Colors.redAccent)),
             ],
           ),
         ),
@@ -297,7 +347,8 @@ class BookCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('도서 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('도서 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text(
           '\'${book.title}\' 도서와 작성된 모든 독서 기록이 함께 삭제됩니다. 정말 삭제하시겠습니까?',
           style: const TextStyle(fontSize: 14),
@@ -310,7 +361,9 @@ class BookCard extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(bookControllerProvider.notifier).deleteBook(book.id);
+              await ref
+                  .read(bookControllerProvider.notifier)
+                  .deleteBook(book.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

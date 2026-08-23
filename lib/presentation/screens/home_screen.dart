@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../controllers/book_controller.dart';
+import '../controllers/theme_controller.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_form_dialog.dart';
 import '../widgets/book_search_dialog.dart';
@@ -26,6 +27,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final filteredBooksAsync = ref.watch(filteredBooksProvider);
     final currentFilter = ref.watch(bookFilterProvider);
 
@@ -46,25 +48,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onChanged: (val) =>
                     ref.read(bookSearchQueryProvider.notifier).state = val,
               )
-            : const Row(
+            : Row(
                 children: [
-                  Icon(Icons.auto_stories_rounded,
-                      color: AppTheme.primaryColor, size: 26),
-                  SizedBox(width: 8),
-                  Text('내 로컬 서재'),
+                  Icon(
+                    Icons.auto_stories_rounded,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                    size: 26,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('내 로컬 서재'),
                 ],
               ),
         actions: [
           // 온라인 도서 검색 버튼
           IconButton(
-            icon: const Icon(Icons.travel_explore_rounded,
-                color: AppTheme.primaryColor),
+            icon: Icon(
+              Icons.travel_explore_rounded,
+              color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+            ),
             tooltip: '온라인 도서 검색 및 등록',
             onPressed: () => BookSearchDialog.show(context),
           ),
           // 내 서재 내 검색 버튼
           IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            icon:
+                Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
             tooltip: '내 서재 검색',
             onPressed: () {
               setState(() {
@@ -78,7 +87,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               });
             },
           ),
-          const SizedBox(width: 6),
+          // 다크/라이트 테마 토글 버튼
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
+              color: isDark ? Colors.amberAccent : AppTheme.textSecondary,
+            ),
+            tooltip: '테마 전환 (라이트/다크)',
+            onPressed: () =>
+                ref.read(themeControllerProvider.notifier).toggleTheme(context),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: filteredBooksAsync.when(
@@ -102,6 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         label: '전체',
                         type: BookFilterType.all,
                         isSelected: currentFilter == BookFilterType.all,
+                        context: context,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
@@ -109,6 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         label: '📖 읽는 중',
                         type: BookFilterType.reading,
                         isSelected: currentFilter == BookFilterType.reading,
+                        context: context,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
@@ -116,13 +137,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         label: '🎉 완독',
                         type: BookFilterType.completed,
                         isSelected: currentFilter == BookFilterType.completed,
+                        context: context,
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // 도서 목록 리스트 또는 빈 화면 안내
+              // 도서 목록 그리드/리스트
               if (books.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
@@ -130,12 +152,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 90),
+                  padding: const EdgeInsets.only(
+                      left: 16, right: 16, top: 8, bottom: 90),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final book = books[index];
-                        return BookCard(book: book);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: BookCard(book: book),
+                        );
                       },
                       childCount: books.length,
                     ),
@@ -147,8 +173,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppTheme.primaryColor),
         ),
-        error: (err, _) => Center(
-          child: Text('데이터를 불러오지 못했습니다: $err'),
+        error: (err, stack) => Center(
+          child: Text('오류가 발생했습니다: $err'),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -156,7 +182,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         icon: const Icon(Icons.add_rounded),
         label: const Text(
           '도서 등록',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -167,32 +193,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String label,
     required BookFilterType type,
     required bool isSelected,
+    required BuildContext context,
   }) {
-    return FilterChip(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (_) => ref.read(bookFilterProvider.notifier).state = type,
-      backgroundColor: Colors.white,
-      selectedColor: AppTheme.primaryColor.withValues(alpha: 0.12),
-      checkmarkColor: AppTheme.primaryColor,
+      onSelected: (selected) {
+        if (selected) {
+          ref.read(bookFilterProvider.notifier).state = type;
+        }
+      },
+      selectedColor: isDark
+          ? AppTheme.primaryLight.withValues(alpha: 0.25)
+          : AppTheme.primaryColor.withValues(alpha: 0.12),
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       labelStyle: TextStyle(
         fontSize: 13,
-        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        color: isSelected
+            ? (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+            : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-          width: 1,
+          color: isSelected
+              ? (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+              : (isDark ? AppTheme.darkBorder : AppTheme.borderColor),
+          width: isSelected ? 1.5 : 1.0,
         ),
       ),
+      showCheckmark: false,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    final query = ref.watch(bookSearchQueryProvider);
-    final hasQuery = query.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
       child: Padding(
@@ -200,74 +239,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                hasQuery
-                    ? Icons.search_off_rounded
-                    : Icons.library_books_outlined,
-                size: 56,
-                color: AppTheme.primaryColor,
-              ),
+            Icon(
+              Icons.menu_book_rounded,
+              size: 72,
+              color: (isDark ? AppTheme.darkTextLight : AppTheme.textLight)
+                  .withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              hasQuery ? '검색 결과가 없습니다' : '아직 등록된 책이 없어요',
-              style: const TextStyle(
+              '조건에 맞는 책이 없습니다',
+              style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              hasQuery
-                  ? '\'$query\'에 해당하는 책을 찾을 수 없습니다.'
-                  : '읽고 있거나 기억하고 싶은 책을\n지금 바로 등록해 보세요.',
+              '새로운 책을 등록하거나 온라인에서 검색해 보세요.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
-                height: 1.4,
+                color:
+                    isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
               ),
             ),
-            if (!hasQuery) ...[
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => BookSearchDialog.show(context),
-                    icon: const Icon(Icons.travel_explore_rounded, size: 18),
-                    label: const Text('온라인 검색'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => BookSearchDialog.show(context),
+                  icon: const Icon(Icons.travel_explore_rounded, size: 18),
+                  label: const Text('온라인 검색'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => BookFormDialog.show(context),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('직접 등록하기'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => BookFormDialog.show(context),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('직접 등록'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                    foregroundColor:
+                        isDark ? AppTheme.darkBackground : Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
         ),
       ),

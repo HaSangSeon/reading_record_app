@@ -49,13 +49,16 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
     final progress = widget.book.totalPages > 0
         ? (_currentPage / widget.book.totalPages).clamp(0.0, 1.0)
         : 0.0;
-    final isCompleted = widget.book.totalPages > 0 && _currentPage >= widget.book.totalPages;
+    final isCompleted =
+        widget.book.totalPages > 0 && _currentPage >= widget.book.totalPages;
 
     return Dialog(
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -68,32 +71,43 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    color: (isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor)
+                        .withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.bookmark_added_rounded,
-                      color: AppTheme.primaryColor, size: 24),
+                  child: Icon(
+                    Icons.bookmark_added_rounded,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '독서 진행률 기록',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
                         ),
                       ),
                       Text(
                         widget.book.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppTheme.textSecondary,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
                         ),
                       ),
                     ],
@@ -106,9 +120,13 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               decoration: BoxDecoration(
-                color: AppTheme.backgroundColor,
+                color: isDark
+                    ? const Color(0xFF0F172A)
+                    : AppTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.borderColor),
+                border: Border.all(
+                  color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -121,10 +139,12 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                       controller: _pageController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.primaryColor,
+                        color: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -148,9 +168,11 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                     widget.book.totalPages > 0
                         ? '/ ${widget.book.totalPages} p'
                         : 'p',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: AppTheme.textSecondary,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -165,11 +187,16 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                   trackHeight: 6,
                   activeTrackColor: isCompleted
                       ? AppTheme.successColor
-                      : AppTheme.primaryColor,
-                  inactiveTrackColor: AppTheme.borderColor,
+                      : (isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor),
+                  inactiveTrackColor:
+                      isDark ? AppTheme.darkBorder : AppTheme.borderColor,
                   thumbColor: isCompleted
                       ? AppTheme.successColor
-                      : AppTheme.primaryColor,
+                      : (isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor),
                   overlayColor: AppTheme.primaryColor.withValues(alpha: 0.15),
                 ),
                 child: Slider(
@@ -187,7 +214,9 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                   fontWeight: FontWeight.w700,
                   color: isCompleted
                       ? AppTheme.successColor
-                      : AppTheme.primaryColor,
+                      : (isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor),
                 ),
               ),
               const SizedBox(height: 12),
@@ -197,23 +226,41 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _currentPage > 0 ? () => _updatePage(_currentPage - 10) : null,
+                    onPressed: _currentPage > 0
+                        ? () => _updatePage(_currentPage - 10)
+                        : null,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(
+                        color:
+                            isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                      ),
                     ),
-                    child: const Text('-10p', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('-10p',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _currentPage > 0 ? () => _updatePage(_currentPage - 1) : null,
+                    onPressed: _currentPage > 0
+                        ? () => _updatePage(_currentPage - 1)
+                        : null,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(
+                        color:
+                            isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                      ),
                     ),
-                    child: const Text('-1p', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('-1p',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -222,9 +269,16 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                     onPressed: () => _updatePage(_currentPage + 1),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(
+                        color:
+                            isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                      ),
                     ),
-                    child: const Text('+1p', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('+1p',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -233,9 +287,16 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                     onPressed: () => _updatePage(_currentPage + 10),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(
+                        color:
+                            isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                      ),
                     ),
-                    child: const Text('+10p', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: const Text('+10p',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -249,7 +310,12 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(
+                        color:
+                            isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                      ),
                     ),
                     child: const Text('취소'),
                   ),
@@ -258,19 +324,26 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      await ref.read(bookControllerProvider.notifier).updateProgress(
+                      await ref
+                          .read(bookControllerProvider.notifier)
+                          .updateProgress(
                             widget.book.id,
                             _currentPage,
                           );
                       if (context.mounted) Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
+                      foregroundColor:
+                          isDark ? AppTheme.darkBackground : Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('저장하기', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('저장하기',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

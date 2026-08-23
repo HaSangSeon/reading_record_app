@@ -41,14 +41,15 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final searchState = ref.watch(bookSearchControllerProvider);
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
       height: mediaQuery.size.height * 0.88,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -62,32 +63,43 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.borderColor,
+                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.travel_explore_rounded,
-                            color: AppTheme.primaryColor, size: 24),
-                        SizedBox(width: 8),
+                        Icon(
+                          Icons.travel_explore_rounded,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '온라인 도서 검색',
                           style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
+                            color: isDark
+                                ? AppTheme.darkTextPrimary
+                                : AppTheme.textPrimary,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded,
-                          color: AppTheme.textSecondary),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -100,8 +112,12 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   onSubmitted: (_) => _onSearch(),
                   decoration: InputDecoration(
                     hintText: '책 제목, 저자, ISBN 검색 (예: 불편한 편의점)',
-                    prefixIcon: const Icon(Icons.search_rounded,
-                        color: AppTheme.primaryColor),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
+                    ),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -117,8 +133,12 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                             },
                           ),
                         IconButton(
-                          icon: const Icon(Icons.arrow_forward_rounded,
-                              color: AppTheme.primaryColor),
+                          icon: Icon(
+                            Icons.arrow_forward_rounded,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
+                          ),
                           onPressed: _onSearch,
                         ),
                       ],
@@ -130,18 +150,21 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
             ),
           ),
 
-          const Divider(height: 1, color: AppTheme.borderColor),
+          Divider(
+            height: 1,
+            color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          ),
 
           // 검색 결과 본문
           Expanded(
             child: searchState.when(
               data: (results) {
                 if (_queryController.text.trim().isEmpty && results.isEmpty) {
-                  return _buildInitialGuide();
+                  return _buildInitialGuide(context);
                 }
 
                 if (results.isEmpty) {
-                  return _buildEmptyResult();
+                  return _buildEmptyResult(context);
                 }
 
                 return ListView.separated(
@@ -154,16 +177,24 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   },
                 );
               },
-              loading: () => const Center(
+              loading: () => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: AppTheme.primaryColor),
-                    SizedBox(height: 16),
+                    CircularProgressIndicator(
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       '온라인 도서 데이터베이스 검색 중...',
                       style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 14),
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -180,8 +211,12 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                       Text(
                         '$err',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: AppTheme.textPrimary, fontSize: 14),
+                        style: TextStyle(
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
@@ -200,15 +235,19 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
   }
 
   Widget _buildSearchResultItem(BuildContext context, BookSearchResult item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -222,24 +261,29 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
             width: 64,
             height: 92,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.08),
+              color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.borderColor),
+              border: Border.all(
+                color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: item.coverUrl != null && item.coverUrl!.isNotEmpty
                 ? Image.network(
                     item.coverUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Icon(
+                    errorBuilder: (_, _, _) => Icon(
                       Icons.menu_book_rounded,
-                      color: AppTheme.primaryLight,
+                      color:
+                          isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
                       size: 28,
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.menu_book_rounded,
-                    color: AppTheme.primaryLight,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
                     size: 28,
                   ),
           ),
@@ -253,10 +297,12 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   item.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: isDark
+                        ? AppTheme.darkTextPrimary
+                        : AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -264,19 +310,23 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   '${item.author}${item.publisher.isNotEmpty ? ' · ${item.publisher}' : ''}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondary,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
                   ),
                 ),
                 if (item.totalPages > 0) ...[
                   const SizedBox(height: 4),
                   Text(
                     '총 ${item.totalPages} 페이지',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryColor,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
                     ),
                   ),
                 ],
@@ -296,8 +346,12 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         minimumSize: const Size(0, 32),
+                        foregroundColor: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
                       ),
-                      child: const Text('수정 후 등록', style: TextStyle(fontSize: 12)),
+                      child:
+                          const Text('수정 후 등록', style: TextStyle(fontSize: 12)),
                     ),
                     const SizedBox(width: 6),
                     // 즉시 내 서재에 담기
@@ -319,7 +373,8 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('\'${item.title}\' 도서가 내 서재에 등록되었습니다.'),
+                              content: Text(
+                                  '\'${item.title}\' 도서가 내 서재에 등록되었습니다.'),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10)),
@@ -332,8 +387,11 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                           style: TextStyle(
                               fontSize: 12, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
+                        backgroundColor: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
+                        foregroundColor:
+                            isDark ? AppTheme.darkBackground : Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         minimumSize: const Size(0, 32),
@@ -351,7 +409,9 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
     );
   }
 
-  Widget _buildInitialGuide() {
+  Widget _buildInitialGuide(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -361,28 +421,34 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                    .withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.auto_stories_rounded,
-                  size: 48, color: AppTheme.primaryColor),
+              child: Icon(
+                Icons.auto_stories_rounded,
+                size: 48,
+                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+              ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '원하는 책을 검색해 보세요',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '제목, 저자명을 검색하면 표지 이미지, 출판사,\n페이지 수가 자동으로 채워집니다.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textSecondary,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -390,10 +456,10 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
             Wrap(
               spacing: 8,
               children: [
-                _buildSuggestChip('클린 코드'),
-                _buildSuggestChip('데미안'),
-                _buildSuggestChip('어린 왕자'),
-                _buildSuggestChip('사피엔스'),
+                _buildSuggestChip('클린 코드', context),
+                _buildSuggestChip('데미안', context),
+                _buildSuggestChip('어린 왕자', context),
+                _buildSuggestChip('사피엔스', context),
               ],
             ),
           ],
@@ -402,12 +468,20 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
     );
   }
 
-  Widget _buildSuggestChip(String keyword) {
+  Widget _buildSuggestChip(String keyword, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return ActionChip(
       label: Text(keyword),
-      backgroundColor: AppTheme.backgroundColor,
-      side: const BorderSide(color: AppTheme.borderColor),
-      labelStyle: const TextStyle(fontSize: 12, color: AppTheme.textPrimary),
+      backgroundColor:
+          isDark ? const Color(0xFF0F172A) : AppTheme.backgroundColor,
+      side: BorderSide(
+        color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+      ),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+      ),
       onPressed: () {
         _queryController.text = keyword;
         _onSearch();
@@ -415,27 +489,39 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
     );
   }
 
-  Widget _buildEmptyResult() {
+  Widget _buildEmptyResult(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off_rounded,
-                size: 48, color: AppTheme.textLight),
+            Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: (isDark ? AppTheme.darkTextLight : AppTheme.textLight)
+                  .withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '검색된 도서가 없습니다',
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '철자를 확인하거나 다른 검색어로 검색해 보세요.',
-              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
+              ),
             ),
           ],
         ),

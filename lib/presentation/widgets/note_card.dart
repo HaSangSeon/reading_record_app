@@ -19,14 +19,19 @@ class NoteCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateFormat = DateFormat('yyyy.MM.dd HH:mm');
     final formattedDate = dateFormat.format(note.createdAt);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppTheme.borderColor, width: 1),
+        side: BorderSide(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          width: 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -43,21 +48,33 @@ class NoteCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        color: (isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor)
+                            .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.bookmark_rounded,
-                              size: 14, color: AppTheme.primaryColor),
+                          Icon(
+                            Icons.bookmark_rounded,
+                            size: 14,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            note.pageNumber > 0 ? 'p. ${note.pageNumber}' : '전체 메모',
-                            style: const TextStyle(
+                            note.pageNumber > 0
+                                ? 'p. ${note.pageNumber}'
+                                : '전체 메모',
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.primaryColor,
+                              color: isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor,
                             ),
                           ),
                         ],
@@ -66,9 +83,11 @@ class NoteCard extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       formattedDate,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.textLight,
+                        color: isDark
+                            ? AppTheme.darkTextLight
+                            : AppTheme.textLight,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -76,8 +95,11 @@ class NoteCard extends ConsumerWidget {
                 ),
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.more_vert_rounded,
-                      size: 18, color: AppTheme.textLight),
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 18,
+                    color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
+                  ),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   onSelected: (value) {
@@ -88,14 +110,19 @@ class NoteCard extends ConsumerWidget {
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_outlined,
-                              size: 16, color: AppTheme.textSecondary),
-                          SizedBox(width: 8),
-                          Text('노트 수정', style: TextStyle(fontSize: 13)),
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: isDark
+                                ? AppTheme.darkTextSecondary
+                                : AppTheme.textSecondary,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('노트 수정', style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
@@ -125,25 +152,39 @@ class NoteCard extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
+                  color: isDark
+                      ? const Color(0xFF0F172A)
+                      : AppTheme.backgroundColor,
                   borderRadius: BorderRadius.circular(10),
-                  border: const Border(
-                    left: BorderSide(color: AppTheme.primaryColor, width: 3.5),
+                  border: Border(
+                    left: BorderSide(
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
+                      width: 3.5,
+                    ),
                   ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.format_quote_rounded,
-                        size: 18, color: AppTheme.primaryLight),
+                    Icon(
+                      Icons.format_quote_rounded,
+                      size: 18,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         note.quotation,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontStyle: FontStyle.italic,
-                          color: AppTheme.textPrimary,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
                           height: 1.4,
                           fontWeight: FontWeight.w500,
                         ),
@@ -158,9 +199,9 @@ class NoteCard extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               note.content,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
-                color: AppTheme.textPrimary,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
                 height: 1.5,
               ),
             ),
@@ -189,7 +230,9 @@ class NoteCard extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(noteControllerProvider.notifier).deleteNote(note.id);
+              await ref
+                  .read(noteControllerProvider.notifier)
+                  .deleteNote(note.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

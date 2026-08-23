@@ -17,6 +17,7 @@ class BookDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bookAsync = ref.watch(singleBookStreamProvider(bookId));
     final notesAsync = ref.watch(sortedNotesProvider(bookId));
     final sortOrder = ref.watch(noteSortOrderProvider(bookId));
@@ -58,7 +59,7 @@ class BookDetailScreen extends ConsumerWidget {
                       : Icons.check_circle_outline_rounded,
                   color: book.isCompleted
                       ? AppTheme.successColor
-                      : AppTheme.textSecondary,
+                      : (isDark ? AppTheme.darkTextLight : AppTheme.textSecondary),
                 ),
                 tooltip: book.isCompleted ? '읽는 중으로 변경' : '완독으로 표시',
                 onPressed: () => ref
@@ -118,15 +119,22 @@ class BookDetailScreen extends ConsumerWidget {
                       notesAsync.when(
                         data: (notes) => Row(
                           children: [
-                            const Icon(Icons.edit_note_rounded,
-                                color: AppTheme.primaryColor, size: 22),
+                            Icon(
+                              Icons.edit_note_rounded,
+                              color: isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor,
+                              size: 22,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               '독서 기록 (${notes.length})',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.textPrimary,
+                                color: isDark
+                                    ? AppTheme.darkTextPrimary
+                                    : AppTheme.textPrimary,
                               ),
                             ),
                           ],
@@ -154,7 +162,9 @@ class BookDetailScreen extends ConsumerWidget {
                               fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppTheme.primaryColor,
+                          foregroundColor: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
                         ),
                       ),
                     ],
@@ -184,12 +194,15 @@ class BookDetailScreen extends ConsumerWidget {
                     ),
                   );
                 },
-                loading: () => const SliverToBoxAdapter(
+                loading: () => SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: Center(
                       child: CircularProgressIndicator(
-                          color: AppTheme.primaryColor),
+                        color: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
+                      ),
                     ),
                   ),
                 ),
@@ -207,9 +220,11 @@ class BookDetailScreen extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+          child: CircularProgressIndicator(
+            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+          ),
         ),
       ),
       error: (err, _) => Scaffold(
@@ -219,6 +234,7 @@ class BookDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildBookHeader(BuildContext context, WidgetRef ref, Book book) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateFormat = DateFormat('yyyy.MM.dd');
     final registeredDate = dateFormat.format(book.createdAt);
 
@@ -226,12 +242,14 @@ class BookDetailScreen extends ConsumerWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(
+          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -248,12 +266,16 @@ class BookDetailScreen extends ConsumerWidget {
                 width: 90,
                 height: 130,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                  color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.borderColor),
+                  border: Border.all(
+                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
                       blurRadius: 8,
                       offset: const Offset(2, 4),
                     ),
@@ -264,9 +286,10 @@ class BookDetailScreen extends ConsumerWidget {
                     ? Image.network(
                         book.coverUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _buildFallbackCover(book),
+                        errorBuilder: (_, _, _) =>
+                            _buildFallbackCover(book, context),
                       )
-                    : _buildFallbackCover(book),
+                    : _buildFallbackCover(book, context),
               ),
               const SizedBox(width: 16),
               // 도서 메타데이터
@@ -276,29 +299,35 @@ class BookDetailScreen extends ConsumerWidget {
                   children: [
                     Text(
                       book.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.textPrimary,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
                         height: 1.3,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       book.author,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
                       ),
                     ),
                     if (book.publisher.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         book.publisher,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textLight,
+                          color: isDark
+                              ? AppTheme.darkTextLight
+                              : AppTheme.textLight,
                         ),
                       ),
                     ],
@@ -319,10 +348,12 @@ class BookDetailScreen extends ConsumerWidget {
                           const SizedBox(width: 4),
                           Text(
                             book.rating.toStringAsFixed(1),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
                             ),
                           ),
                         ],
@@ -330,8 +361,12 @@ class BookDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 6),
                     Text(
                       '등록일: $registeredDate',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textLight),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppTheme.darkTextLight
+                            : AppTheme.textLight,
+                      ),
                     ),
                   ],
                 ),
@@ -340,7 +375,10 @@ class BookDetailScreen extends ConsumerWidget {
           ),
 
           const SizedBox(height: 16),
-          const Divider(height: 1, color: AppTheme.borderColor),
+          Divider(
+            height: 1,
+            color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          ),
           const SizedBox(height: 14),
 
           // 독서 진행률 바 및 퀵 기록 버튼
@@ -354,8 +392,11 @@ class BookDetailScreen extends ConsumerWidget {
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: book.isCompleted
-                          ? AppTheme.successColor.withValues(alpha: 0.12)
-                          : AppTheme.primaryColor.withValues(alpha: 0.1),
+                          ? AppTheme.successColor.withValues(alpha: 0.15)
+                          : (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -367,7 +408,9 @@ class BookDetailScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                         color: book.isCompleted
                             ? AppTheme.successColor
-                            : AppTheme.primaryColor,
+                            : (isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor),
                       ),
                     ),
                   ),
@@ -376,10 +419,12 @@ class BookDetailScreen extends ConsumerWidget {
                     book.totalPages > 0
                         ? '${book.readPages} / ${book.totalPages} p'
                         : '${book.readPages} p',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -393,50 +438,68 @@ class BookDetailScreen extends ConsumerWidget {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
-                  side: const BorderSide(color: AppTheme.primaryColor),
-                  foregroundColor: AppTheme.primaryColor,
+                  side: BorderSide(
+                    color: isDark
+                        ? AppTheme.primaryLight
+                        : AppTheme.primaryColor,
+                  ),
+                  foregroundColor:
+                      isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: book.progress,
               minHeight: 8,
-              backgroundColor: AppTheme.borderColor,
+              backgroundColor:
+                  isDark ? AppTheme.darkBorder : AppTheme.borderColor,
               valueColor: AlwaysStoppedAnimation<Color>(
                 book.isCompleted
                     ? AppTheme.successColor
-                    : AppTheme.primaryColor,
+                    : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor),
               ),
             ),
           ),
 
-          // 한 줄 평 / 책 메모가 있는 경우 표시
+          // 한 줄 메모 서평
           if (book.memo.isNotEmpty) ...[
             const SizedBox(height: 14),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.backgroundColor,
-                borderRadius: BorderRadius.circular(12),
+                color: isDark
+                    ? const Color(0xFF0F172A)
+                    : AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.note_alt_rounded,
-                      size: 16, color: AppTheme.primaryColor),
+                  Icon(
+                    Icons.format_quote_rounded,
+                    size: 16,
+                    color: isDark
+                        ? AppTheme.primaryLight
+                        : AppTheme.primaryColor,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       book.memo,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.textPrimary,
-                        height: 1.4,
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
@@ -449,7 +512,10 @@ class BookDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFallbackCover(Book book) {
+  Widget _buildFallbackCover(Book book, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -458,8 +524,8 @@ class BookDetailScreen extends ConsumerWidget {
             book.isCompleted
                 ? Icons.auto_stories_rounded
                 : Icons.menu_book_rounded,
-            color: AppTheme.primaryColor.withValues(alpha: 0.6),
-            size: 36,
+            color: primary.withValues(alpha: 0.7),
+            size: 38,
           ),
           const SizedBox(height: 4),
           Text(
@@ -467,7 +533,7 @@ class BookDetailScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor.withValues(alpha: 0.8),
+              color: primary.withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -476,54 +542,56 @@ class BookDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyNotes(BuildContext context, Book book) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Center(
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.edit_note_rounded,
-                size: 48,
-                color: AppTheme.primaryColor,
-              ),
+            Icon(
+              Icons.draw_outlined,
+              size: 56,
+              color: (isDark ? AppTheme.darkTextLight : AppTheme.textLight)
+                  .withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '아직 작성된 독서 노트가 없어요',
+            const SizedBox(height: 12),
+            Text(
+              '아직 작성된 독서 기록이 없습니다',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+                color: isDark
+                    ? AppTheme.darkTextPrimary
+                    : AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              '기억하고 싶은 문장이나 느낀 점을\n자유롭게 기록해 보세요.',
+            Text(
+              '책을 읽으며 기억하고 싶은 문장이나 생각을 기록해 보세요.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textSecondary,
-                height: 1.4,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
               onPressed: () => NoteFormDialog.show(context, book: book),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('첫 기록 남기기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              icon: const Icon(Icons.edit_rounded, size: 16),
+              label: const Text('첫 기록 작성하기'),
+              style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(10)),
+                side: BorderSide(
+                  color: isDark
+                      ? AppTheme.primaryLight
+                      : AppTheme.primaryColor,
+                ),
+                foregroundColor:
+                    isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
               ),
             ),
           ],
@@ -536,10 +604,10 @@ class BookDetailScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('도서 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('도서 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text(
-          '\'${book.title}\' 도서와 작성된 모든 독서 기록이 함께 삭제됩니다. 정말 삭제하시겠습니까?',
+          '\'${book.title}\' 도서와 작성된 모든 독서 기록(${book.readPages}p)이 함께 삭제됩니다. 정말 삭제하시겠습니까?',
           style: const TextStyle(fontSize: 14),
         ),
         actions: [
@@ -550,9 +618,11 @@ class BookDetailScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(bookControllerProvider.notifier).deleteBook(book.id);
+              Navigator.pop(context);
+              await ref
+                  .read(bookControllerProvider.notifier)
+                  .deleteBook(book.id);
               if (context.mounted) {
-                Navigator.pop(context); // 도서 상세 화면에서 나가기
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: const Text('도서가 삭제되었습니다.'),

@@ -7,15 +7,43 @@ import 'book_search_dialog.dart';
 
 class BookFormDialog extends ConsumerStatefulWidget {
   final Book? initialBook;
+  final String? initialTitle;
+  final String? initialAuthor;
+  final String? initialPublisher;
+  final String? initialCoverUrl;
+  final int? initialTotalPages;
 
-  const BookFormDialog({super.key, this.initialBook});
+  const BookFormDialog({
+    super.key,
+    this.initialBook,
+    this.initialTitle,
+    this.initialAuthor,
+    this.initialPublisher,
+    this.initialCoverUrl,
+    this.initialTotalPages,
+  });
 
-  static Future<void> show(BuildContext context, {Book? book}) {
+  static Future<void> show(
+    BuildContext context, {
+    Book? book,
+    String? title,
+    String? author,
+    String? publisher,
+    String? coverUrl,
+    int? totalPages,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => BookFormDialog(initialBook: book),
+      builder: (context) => BookFormDialog(
+        initialBook: book,
+        initialTitle: title,
+        initialAuthor: author,
+        initialPublisher: publisher,
+        initialCoverUrl: coverUrl,
+        initialTotalPages: totalPages,
+      ),
     );
   }
 
@@ -34,24 +62,31 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
   late TextEditingController _coverUrlController;
   late TextEditingController _memoController;
 
-  double _rating = 0.0;
-  bool _isCompleted = false;
+  late bool _isCompleted;
+  late double _rating;
 
   @override
   void initState() {
     super.initState();
     final b = widget.initialBook;
-    _titleController = TextEditingController(text: b?.title ?? '');
-    _authorController = TextEditingController(text: b?.author ?? '');
-    _publisherController = TextEditingController(text: b?.publisher ?? '');
+    _titleController =
+        TextEditingController(text: b?.title ?? widget.initialTitle ?? '');
+    _authorController =
+        TextEditingController(text: b?.author ?? widget.initialAuthor ?? '');
+    _publisherController = TextEditingController(
+        text: b?.publisher ?? widget.initialPublisher ?? '');
     _totalPagesController = TextEditingController(
-        text: b != null && b.totalPages > 0 ? b.totalPages.toString() : '');
+        text: (b?.totalPages ?? widget.initialTotalPages ?? 0) > 0
+            ? (b?.totalPages ?? widget.initialTotalPages).toString()
+            : '');
     _readPagesController = TextEditingController(
-        text: b != null && b.readPages > 0 ? b.readPages.toString() : '');
-    _coverUrlController = TextEditingController(text: b?.coverUrl ?? '');
+        text: (b?.readPages ?? 0) > 0 ? b!.readPages.toString() : '');
+    _coverUrlController = TextEditingController(
+        text: b?.coverUrl ?? widget.initialCoverUrl ?? '');
     _memoController = TextEditingController(text: b?.memo ?? '');
-    _rating = b?.rating ?? 0.0;
+
     _isCompleted = b?.isCompleted ?? false;
+    _rating = b?.rating ?? 0.0;
   }
 
   @override
@@ -74,9 +109,9 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     final publisher = _publisherController.text.trim();
     final totalPages = int.tryParse(_totalPagesController.text.trim()) ?? 0;
     final readPages = int.tryParse(_readPagesController.text.trim()) ?? 0;
-    final coverUrl = _coverUrlController.text.trim().isNotEmpty
-        ? _coverUrlController.text.trim()
-        : null;
+    final coverUrl = _coverUrlController.text.trim().isEmpty
+        ? null
+        : _coverUrlController.text.trim();
     final memo = _memoController.text.trim();
 
     final isEdit = widget.initialBook != null;
@@ -90,11 +125,12 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         totalPages: totalPages,
         readPages: readPages,
         coverUrl: coverUrl,
-        isCompleted: _isCompleted || (totalPages > 0 && readPages >= totalPages),
+        isCompleted: _isCompleted,
         rating: _rating,
         memo: memo,
       );
-      success = await ref.read(bookControllerProvider.notifier).updateBook(updated);
+      success =
+          await ref.read(bookControllerProvider.notifier).updateBook(updated);
     } else {
       success = await ref.read(bookControllerProvider.notifier).addBook(
             title: title,
@@ -115,7 +151,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         SnackBar(
           content: Text(isEdit ? '도서 정보가 수정되었습니다.' : '새 도서가 등록되었습니다.'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -123,13 +160,14 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.initialBook != null;
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         top: 20,
@@ -151,7 +189,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: AppTheme.borderColor,
+                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -161,10 +199,12 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                 children: [
                   Text(
                     isEdit ? '도서 정보 수정 ✏️' : '새 도서 등록 📚',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
                     ),
                   ),
                   Row(
@@ -175,25 +215,39 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                             Navigator.pop(context);
                             BookSearchDialog.show(context);
                           },
-                          icon: const Icon(Icons.travel_explore_rounded,
-                              size: 16, color: AppTheme.primaryColor),
-                          label: const Text('온라인 검색',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryColor)),
+                          icon: Icon(Icons.travel_explore_rounded,
+                              size: 16,
+                              color: isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor),
+                          label: Text(
+                            '온라인 검색',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor,
+                            ),
+                          ),
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
-                            backgroundColor:
-                                AppTheme.primaryColor.withValues(alpha: 0.08),
+                            backgroundColor: (isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor)
+                                .withValues(alpha: 0.1),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close,
-                            color: AppTheme.textSecondary),
+                        icon: Icon(
+                          Icons.close,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -203,13 +257,18 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
               // 도서 제목 (필수)
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: '책 제목 *',
                   hintText: '예: 불편한 편의점',
-                  prefixIcon: Icon(Icons.menu_book_rounded, color: AppTheme.primaryColor),
+                  prefixIcon: Icon(
+                    Icons.menu_book_rounded,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  ),
                 ),
-                validator: (val) =>
-                    val == null || val.trim().isEmpty ? '책 제목을 입력해 주세요.' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? '책 제목을 입력해 주세요.'
+                    : null,
               ),
               const SizedBox(height: 12),
               // 저자 (필수) & 출판사
@@ -218,23 +277,34 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                   Expanded(
                     child: TextFormField(
                       controller: _authorController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '저자 *',
                         hintText: '김호연',
-                        prefixIcon: Icon(Icons.person_outline_rounded, color: AppTheme.primaryColor),
+                        prefixIcon: Icon(
+                          Icons.person_outline_rounded,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                       ),
-                      validator: (val) =>
-                          val == null || val.trim().isEmpty ? '저자를 입력해 주세요.' : null,
+                      validator: (val) => val == null || val.trim().isEmpty
+                          ? '저자를 입력해 주세요.'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _publisherController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '출판사',
                         hintText: '나무옆의자',
-                        prefixIcon: Icon(Icons.business_outlined, color: AppTheme.primaryColor),
+                        prefixIcon: Icon(
+                          Icons.business_outlined,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                       ),
                     ),
                   ),
@@ -248,11 +318,16 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     child: TextFormField(
                       controller: _totalPagesController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '총 페이지 수',
                         hintText: '300',
                         suffixText: 'p',
-                        prefixIcon: Icon(Icons.auto_stories_outlined, color: AppTheme.primaryColor),
+                        prefixIcon: Icon(
+                          Icons.auto_stories_outlined,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                       ),
                     ),
                   ),
@@ -261,11 +336,16 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     child: TextFormField(
                       controller: _readPagesController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '현재 읽은 페이지',
                         hintText: '0',
                         suffixText: 'p',
-                        prefixIcon: Icon(Icons.bookmark_outline_rounded, color: AppTheme.primaryColor),
+                        prefixIcon: Icon(
+                          Icons.bookmark_outline_rounded,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                       ),
                     ),
                   ),
@@ -275,22 +355,28 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
               // 표지 이미지 URL
               TextFormField(
                 controller: _coverUrlController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: '표지 이미지 URL (선택)',
                   hintText: 'https://...',
-                  prefixIcon: Icon(Icons.image_outlined, color: AppTheme.primaryColor),
+                  prefixIcon: Icon(
+                    Icons.image_outlined,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               // 별점 선택
               Row(
                 children: [
-                  const Text(
+                  Text(
                     '내 별점:',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -306,7 +392,9 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Icon(
-                            index < _rating ? Icons.star_rounded : Icons.star_border_rounded,
+                            index < _rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
                             color: AppTheme.accentColor,
                             size: 28,
                           ),
@@ -330,10 +418,14 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
               TextFormField(
                 controller: _memoController,
                 maxLines: 2,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: '한 줄 평 / 메모',
                   hintText: '이 책을 읽고 난 느낌이나 기억하고 싶은 점',
-                  prefixIcon: Icon(Icons.note_alt_outlined, color: AppTheme.primaryColor),
+                  prefixIcon: Icon(
+                    Icons.note_alt_outlined,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -341,15 +433,19 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
               ElevatedButton(
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  foregroundColor:
+                      isDark ? AppTheme.darkBackground : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
                 child: Text(
                   isEdit ? '도서 정보 수정 완료' : '내 서재에 등록하기',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800),
                 ),
               ),
             ],

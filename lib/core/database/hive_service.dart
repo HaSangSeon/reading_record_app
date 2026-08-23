@@ -26,9 +26,10 @@ class HiveService {
       Hive.registerAdapter(NoteAdapter());
     }
 
-    // Book 및 Note 저장을 위한 Box 오픈
+    // Book, Note 및 설정 저장을 위한 Box 오픈
     final bookBox = await Hive.openBox<Book>(AppConstants.bookBoxName);
     final noteBox = await Hive.openBox<Note>(AppConstants.noteBoxName);
+    await Hive.openBox(AppConstants.settingsBoxName);
 
     // 첫 실행 시 사용자 경험을 위한 샘플 도서 2권 자동 등록
     if (bookBox.isEmpty) {
@@ -112,6 +113,12 @@ class HiveService {
   Box<Note> get noteBox {
     _ensureInitialized();
     return Hive.box<Note>(AppConstants.noteBoxName);
+  }
+
+  /// 설정 전용 Box 반환
+  Box get settingsBox {
+    _ensureInitialized();
+    return Hive.box(AppConstants.settingsBoxName);
   }
 
   /// 모든 로컬 데이터 삭제 (초기화 기능용)

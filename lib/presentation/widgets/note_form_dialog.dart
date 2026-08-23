@@ -77,7 +77,8 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
         quotation: quotation,
         content: content,
       );
-      success = await ref.read(noteControllerProvider.notifier).updateNote(updated);
+      success =
+          await ref.read(noteControllerProvider.notifier).updateNote(updated);
     } else {
       success = await ref.read(noteControllerProvider.notifier).addNote(
             bookId: widget.book.id,
@@ -94,7 +95,8 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
         SnackBar(
           content: Text(isEdit ? '독서 노트가 수정되었습니다.' : '새 독서 기록이 추가되었습니다.'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -102,13 +104,14 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.initialNote != null;
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         top: 20,
@@ -130,7 +133,7 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: AppTheme.borderColor,
+                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -140,24 +143,33 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                 children: [
                   Text(
                     isEdit ? '독서 기록 수정 📝' : '새 독서 노트 작성 ✍️',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: AppTheme.textSecondary),
+                    icon: Icon(
+                      Icons.close,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // 기록 페이지
+              const SizedBox(height: 14),
+
+              // 기록 페이지 및 진행률 동기화 (여유 있는 너비 및 겹침 방지 레이아웃)
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 140,
+                  Expanded(
+                    flex: 5,
                     child: TextFormField(
                       controller: _pageController,
                       keyboardType: TextInputType.number,
@@ -165,70 +177,120 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                         labelText: '기록한 페이지',
                         hintText: '42',
                         suffixText: widget.book.totalPages > 0
-                            ? '/ ${widget.book.totalPages}p'
+                            ? ' / ${widget.book.totalPages}p'
                             : 'p',
-                        prefixIcon: const Icon(Icons.bookmark_outline_rounded,
-                            color: AppTheme.primaryColor),
+                        suffixStyle: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.bookmark_outline_rounded,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                          size: 20,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 14,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  if (!isEdit)
+                  if (!isEdit) ...[
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: CheckboxListTile(
-                        value: _syncBookProgress,
-                        onChanged: (val) =>
-                            setState(() => _syncBookProgress = val ?? true),
-                        title: const Text(
-                          '책 진행률 함께 갱신',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                              fontWeight: FontWeight.w600),
+                      flex: 5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF0F172A)
+                              : AppTheme.backgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark
+                                ? AppTheme.darkBorder
+                                : AppTheme.borderColor,
+                          ),
                         ),
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        activeColor: AppTheme.primaryColor,
+                        child: CheckboxListTile(
+                          value: _syncBookProgress,
+                          onChanged: (val) =>
+                              setState(() => _syncBookProgress = val ?? true),
+                          title: Text(
+                            '진행률 동기화',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 4),
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: 14),
+
               // 인상 깊은 문장 (발췌문)
               TextFormField(
                 controller: _quotationController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: '인상 깊은 구절 / 발췌문 (선택)',
                   hintText: '책에서 마음에 와닿은 문장을 적어보세요.',
-                  prefixIcon: Icon(Icons.format_quote_rounded,
-                      color: AppTheme.primaryColor),
+                  prefixIcon: Icon(
+                    Icons.format_quote_rounded,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  ),
                   alignLabelWithHint: true,
                 ),
               ),
               const SizedBox(height: 14),
+
               // 나의 생각 / 메모 (필수)
               TextFormField(
                 controller: _contentController,
                 maxLines: 4,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: '나의 생각 / 메모 *',
                   hintText: '이 구절을 읽고 어떤 생각이 들었나요?',
-                  prefixIcon: Icon(Icons.edit_note_rounded,
-                      color: AppTheme.primaryColor),
+                  prefixIcon: Icon(
+                    Icons.edit_note_rounded,
+                    color:
+                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  ),
                   alignLabelWithHint: true,
                 ),
-                validator: (val) =>
-                    val == null || val.trim().isEmpty ? '메모 내용을 입력해 주세요.' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? '메모 내용을 입력해 주세요.'
+                    : null,
               ),
               const SizedBox(height: 24),
+
               // 등록/수정 버튼
               ElevatedButton(
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  foregroundColor:
+                      isDark ? AppTheme.darkBackground : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
@@ -236,7 +298,8 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                 ),
                 child: Text(
                   isEdit ? '기록 수정 완료' : '독서 노트 저장하기',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
