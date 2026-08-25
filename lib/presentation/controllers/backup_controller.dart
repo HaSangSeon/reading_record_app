@@ -22,6 +22,7 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
   BackupController(this._backupService, this._hiveService)
       : super(const AsyncValue.data(null));
 
+  /// JSON 문자열 내보내기
   Future<String?> exportData() async {
     state = const AsyncValue.loading();
     try {
@@ -34,6 +35,50 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// 백업 파일 생성 후 카카오톡/구글 드라이브 등으로 즉시 공유
+  Future<({bool success, int books, int notes, String? error})> exportAndShareFile() async {
+    state = const AsyncValue.loading();
+    try {
+      final result = await _backupService.exportBackupFileAndShare();
+      state = const AsyncValue.data(null);
+      return (
+        success: result.success,
+        books: result.books,
+        notes: result.notes,
+        error: null,
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return (
+        success: false,
+        books: 0,
+        notes: 0,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// 파일 선택기로 외부 백업 파일(.json)을 직접 선택하여 복원
+  Future<({bool success, int books, int notes, String? error})> importFromFile({
+    bool overwrite = false,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final result = await _backupService.pickAndImportBackupFile(overwrite: overwrite);
+      state = const AsyncValue.data(null);
+      return result;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return (
+        success: false,
+        books: 0,
+        notes: 0,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// 텍스트 JSON으로부터 데이터 복원
   Future<({bool success, int books, int notes, String? error})> importData(
     String jsonString, {
     bool overwrite = false,
@@ -49,7 +94,7 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
         success: true,
         books: result.booksRestored,
         notes: result.notesRestored,
-        error: null
+        error: null,
       );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -57,7 +102,7 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
         success: false,
         books: 0,
         notes: 0,
-        error: e.toString().replaceFirst('Exception: ', '').replaceFirst('FormatException: ', '')
+        error: e.toString().replaceFirst('Exception: ', '').replaceFirst('FormatException: ', ''),
       );
     }
   }

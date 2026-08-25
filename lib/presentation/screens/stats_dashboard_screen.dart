@@ -161,35 +161,47 @@ class StatsDashboardScreen extends ConsumerWidget {
     required double avgRating,
   }) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF4F46E5), Color(0xFF6366F1), Color(0xFF3B82F6)],
+          colors: [
+            Color(0xFF312E81), // Deep Indigo
+            Color(0xFF4338CA), // Royal Indigo
+            Color(0xFF4F46E5), // Indigo 600
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF4338CA).withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.auto_stories_rounded, color: Colors.white, size: 22),
-              SizedBox(width: 8),
-              Text(
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.insights_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 8),
+              const Text(
                 '나의 누적 독서 인사이트',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
                   color: Colors.white,
+                  letterSpacing: -0.3,
                 ),
               ),
             ],
@@ -217,7 +229,7 @@ class StatsDashboardScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(color: Colors.white24, height: 1),
+          Divider(color: Colors.white.withValues(alpha: 0.15), height: 1),
           const SizedBox(height: 14),
           Row(
             children: [

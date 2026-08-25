@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -239,19 +240,20 @@ class BookDetailScreen extends ConsumerWidget {
     final registeredDate = dateFormat.format(book.createdAt);
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          color: isDark ? AppTheme.darkBorder : const Color(0xFFEDF0F5),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -261,35 +263,73 @@ class BookDetailScreen extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 도서 표지
+              // 도서 표지 (양장본 3D 스파인 효과)
               Container(
-                width: 90,
-                height: 130,
+                width: 92,
+                height: 136,
                 decoration: BoxDecoration(
                   color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
                       .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                    color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+                    width: 0.8,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color:
-                          Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(2, 4),
+                          Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(2, 6),
                     ),
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                    ? Image.network(
-                        book.coverUrl!,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    () {
+                      final cover = book.coverUrl;
+                      if (cover == null || cover.isEmpty) {
+                        return _buildFallbackCover(book, context);
+                      }
+                      if (cover.startsWith('http://') || cover.startsWith('https://')) {
+                        return Image.network(
+                          cover,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              _buildFallbackCover(book, context),
+                        );
+                      }
+                      return Image.file(
+                        File(cover),
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) =>
                             _buildFallbackCover(book, context),
-                      )
-                    : _buildFallbackCover(book, context),
+                      );
+                    }(),
+                    // 책등(Spine) 음영 효과
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withValues(alpha: 0.32),
+                              Colors.black.withValues(alpha: 0.05),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 16),
               // 도서 메타데이터
@@ -300,19 +340,20 @@ class BookDetailScreen extends ConsumerWidget {
                     Text(
                       book.title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 17.5,
                         fontWeight: FontWeight.w800,
                         color: isDark
                             ? AppTheme.darkTextPrimary
                             : AppTheme.textPrimary,
                         height: 1.3,
+                        letterSpacing: -0.3,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       book.author,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                         color: isDark
                             ? AppTheme.darkTextSecondary
@@ -341,8 +382,8 @@ class BookDetailScreen extends ConsumerWidget {
                               idx < book.rating
                                   ? Icons.star_rounded
                                   : Icons.star_border_rounded,
-                              size: 18,
-                              color: AppTheme.accentColor,
+                              size: 17,
+                              color: const Color(0xFFF59E0B),
                             );
                           }),
                           const SizedBox(width: 4),
@@ -350,7 +391,7 @@ class BookDetailScreen extends ConsumerWidget {
                             book.rating.toStringAsFixed(1),
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               color: isDark
                                   ? AppTheme.darkTextPrimary
                                   : AppTheme.textPrimary,
@@ -360,12 +401,13 @@ class BookDetailScreen extends ConsumerWidget {
                       ),
                     const SizedBox(height: 6),
                     Text(
-                      '등록일: $registeredDate',
+                      '등록일 $registeredDate',
                       style: TextStyle(
                         fontSize: 11,
                         color: isDark
                             ? AppTheme.darkTextLight
                             : AppTheme.textLight,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -377,7 +419,7 @@ class BookDetailScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Divider(
             height: 1,
-            color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+            color: isDark ? AppTheme.darkBorder : const Color(0xFFEDF0F5),
           ),
           const SizedBox(height: 14),
 
@@ -389,23 +431,23 @@ class BookDetailScreen extends ConsumerWidget {
                 children: [
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                     decoration: BoxDecoration(
                       color: book.isCompleted
-                          ? AppTheme.successColor.withValues(alpha: 0.15)
+                          ? AppTheme.successColor.withValues(alpha: isDark ? 0.2 : 0.12)
                           : (isDark
                                   ? AppTheme.primaryLight
                                   : AppTheme.primaryColor)
-                              .withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
+                              .withValues(alpha: isDark ? 0.2 : 0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       book.isCompleted
                           ? '🎉 완독 완료'
                           : '📖 ${book.progressPercentage}% 진행 중',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
                         color: book.isCompleted
                             ? AppTheme.successColor
                             : (isDark
@@ -420,7 +462,7 @@ class BookDetailScreen extends ConsumerWidget {
                         ? '${book.readPages} / ${book.totalPages} p'
                         : '${book.readPages} p',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: isDark
                           ? AppTheme.darkTextSecondary
@@ -431,17 +473,17 @@ class BookDetailScreen extends ConsumerWidget {
               ),
               OutlinedButton.icon(
                 onPressed: () => ReadingProgressDialog.show(context, book),
-                icon: const Icon(Icons.bookmark_added_outlined, size: 16),
-                label: const Text('페이지 수정', style: TextStyle(fontSize: 12)),
+                icon: const Icon(Icons.bookmark_added_outlined, size: 15),
+                label: const Text('페이지 수정', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(10)),
                   side: BorderSide(
                     color: isDark
-                        ? AppTheme.primaryLight
-                        : AppTheme.primaryColor,
+                        ? AppTheme.primaryLight.withValues(alpha: 0.6)
+                        : AppTheme.primaryColor.withValues(alpha: 0.6),
                   ),
                   foregroundColor:
                       isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
@@ -454,9 +496,9 @@ class BookDetailScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: book.progress,
-              minHeight: 8,
+              minHeight: 6,
               backgroundColor:
-                  isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                  isDark ? AppTheme.darkBorder : const Color(0xFFEEF2F6),
               valueColor: AlwaysStoppedAnimation<Color>(
                 book.isCompleted
                     ? AppTheme.successColor
@@ -473,11 +515,11 @@ class BookDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF0F172A)
-                    : AppTheme.backgroundColor,
-                borderRadius: BorderRadius.circular(10),
+                    ? const Color(0xFF0F1626)
+                    : const Color(0xFFF6F8FB),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                  color: isDark ? AppTheme.darkBorder : const Color(0xFFEDF0F5),
                 ),
               ),
               child: Row(
@@ -500,6 +542,7 @@ class BookDetailScreen extends ConsumerWidget {
                             ? AppTheme.darkTextSecondary
                             : AppTheme.textSecondary,
                         fontStyle: FontStyle.italic,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -516,27 +559,38 @@ class BookDetailScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            book.isCompleted
-                ? Icons.auto_stories_rounded
-                : Icons.menu_book_rounded,
-            color: primary.withValues(alpha: 0.7),
-            size: 38,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            book.isCompleted ? '완독' : '읽는 중',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: primary.withValues(alpha: 0.9),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+              : [const Color(0xFFEEF2FF), const Color(0xFFE0E7FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              book.isCompleted
+                  ? Icons.auto_stories_rounded
+                  : Icons.menu_book_rounded,
+              color: primary.withValues(alpha: 0.8),
+              size: 34,
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              book.isCompleted ? '완독' : '읽는 중',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: primary.withValues(alpha: 0.9),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

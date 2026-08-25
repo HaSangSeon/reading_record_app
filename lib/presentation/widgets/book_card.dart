@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
@@ -20,10 +21,11 @@ class BookCard extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
+      elevation: isDark ? 0 : 0.5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         side: BorderSide(
-          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          color: isDark ? AppTheme.darkBorder : const Color(0xFFEDF0F5),
           width: 1,
         ),
       ),
@@ -37,13 +39,13 @@ class BookCard extends ConsumerWidget {
                 ),
               );
             },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 책 표지 이미지 또는 감성적인 대체 커버
+              // 책 표지 이미지 또는 감성적인 대체 커버 (양장본 3D 스파인 룩)
               _buildCoverImage(context),
               const SizedBox(width: 14),
               // 도서 정보
@@ -60,12 +62,13 @@ class BookCard extends ConsumerWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15.5,
                               fontWeight: FontWeight.w700,
                               color: isDark
                                   ? AppTheme.darkTextPrimary
                                   : AppTheme.textPrimary,
-                              height: 1.25,
+                              height: 1.28,
+                              letterSpacing: -0.3,
                             ),
                           ),
                         ),
@@ -79,7 +82,7 @@ class BookCard extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12.5,
                         color: isDark
                             ? AppTheme.darkTextSecondary
                             : AppTheme.textSecondary,
@@ -92,8 +95,8 @@ class BookCard extends ConsumerWidget {
                       Row(
                         children: [
                           const Icon(Icons.star_rounded,
-                              size: 16, color: AppTheme.accentColor),
-                          const SizedBox(width: 2),
+                              size: 15, color: Color(0xFFF59E0B)),
+                          const SizedBox(width: 3),
                           Text(
                             book.rating.toStringAsFixed(1),
                             style: TextStyle(
@@ -122,34 +125,73 @@ class BookCard extends ConsumerWidget {
 
   Widget _buildCoverImage(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cover = book.coverUrl;
+
+    Widget imageWidget;
+    if (cover != null && cover.isNotEmpty) {
+      if (cover.startsWith('http://') || cover.startsWith('https://')) {
+        imageWidget = Image.network(
+          cover,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildFallbackCover(context),
+        );
+      } else {
+        imageWidget = Image.file(
+          File(cover),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildFallbackCover(context),
+        );
+      }
+    } else {
+      imageWidget = _buildFallbackCover(context);
+    }
 
     return Container(
-      width: 72,
-      height: 104,
+      width: 68,
+      height: 100,
       decoration: BoxDecoration(
         color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
             .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
-          width: 1,
+          color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+          width: 0.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-            blurRadius: 8,
-            offset: const Offset(2, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(1, 4),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-          ? Image.network(
-              book.coverUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _buildFallbackCover(context),
-            )
-          : _buildFallbackCover(context),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          imageWidget,
+          // 양장본 책등(Spine) 느낌의 섬세한 그라데이션 오버레이
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 7,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withValues(alpha: 0.28),
+                    Colors.black.withValues(alpha: 0.04),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -157,27 +199,38 @@ class BookCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            book.isCompleted
-                ? Icons.auto_stories_rounded
-                : Icons.menu_book_rounded,
-            color: primary.withValues(alpha: 0.7),
-            size: 32,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            book.isCompleted ? '완독' : '읽는 중',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: primary.withValues(alpha: 0.9),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+              : [const Color(0xFFEEF2FF), const Color(0xFFE0E7FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              book.isCompleted
+                  ? Icons.auto_stories_rounded
+                  : Icons.menu_book_rounded,
+              color: primary.withValues(alpha: 0.8),
+              size: 28,
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              book.isCompleted ? '완독' : '읽는 중',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: primary.withValues(alpha: 0.9),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -193,18 +246,18 @@ class BookCard extends ConsumerWidget {
           children: [
             // 상태 뱃지
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
               decoration: BoxDecoration(
                 color: book.isCompleted
-                    ? AppTheme.successColor.withValues(alpha: 0.15)
+                    ? AppTheme.successColor.withValues(alpha: isDark ? 0.2 : 0.12)
                     : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                        .withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
+                        .withValues(alpha: isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                book.isCompleted ? '🎉 완독 완료' : '📖 ${book.progressPercentage}%',
+                book.isCompleted ? '🎉 완독 완료' : '📖 ${book.progressPercentage}% 진행',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   color: book.isCompleted
                       ? AppTheme.successColor
@@ -234,9 +287,9 @@ class BookCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: book.progress,
-            minHeight: 6,
+            minHeight: 5,
             backgroundColor:
-                isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+                isDark ? AppTheme.darkBorder : const Color(0xFFEEF2F6),
             valueColor: AlwaysStoppedAnimation<Color>(
               book.isCompleted
                   ? AppTheme.successColor

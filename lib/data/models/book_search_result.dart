@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
 import 'book_model.dart';
 
-/// 외부 Open API를 통해 검색된 도서 결과 DTO
+/// 외부 Open API(Kakao / Google Books / Open Library)를 통해 검색된 도서 결과 DTO
 class BookSearchResult {
   final String title;
   final String author;
@@ -43,6 +43,38 @@ class BookSearchResult {
     );
   }
 
+  /// 카카오 도서 검색 결과 매핑 (국내 모든 도서 고화질 표지 완벽 지원)
+  factory BookSearchResult.fromKakao(Map<String, dynamic> doc) {
+    final title = doc['title']?.toString() ?? '제목 없음';
+    final publisher = doc['publisher']?.toString() ?? '';
+    final contents = doc['contents']?.toString() ?? '';
+    final isbn = doc['isbn']?.toString() ?? '';
+
+    // 저자 파싱
+    final authorsList = doc['authors'] as List<dynamic>?;
+    final author = authorsList != null && authorsList.isNotEmpty
+        ? authorsList.map((e) => e.toString()).join(', ')
+        : '저자 미상';
+
+    // 표지 이미지 URL 추출 (HTTPS)
+    String? coverUrl;
+    final thumbnail = doc['thumbnail']?.toString();
+    if (thumbnail != null && thumbnail.isNotEmpty) {
+      coverUrl = thumbnail.replaceFirst('http://', 'https://');
+    }
+
+    return BookSearchResult(
+      title: title,
+      author: author,
+      publisher: publisher,
+      coverUrl: coverUrl,
+      totalPages: 0,
+      description: contents,
+      isbn: isbn,
+    );
+  }
+
+  /// Google Books API 결과 매핑
   factory BookSearchResult.fromGoogleBooks(Map<String, dynamic> item) {
     final volumeInfo = item['volumeInfo'] as Map<String, dynamic>? ?? {};
 
@@ -81,6 +113,7 @@ class BookSearchResult {
     );
   }
 
+  /// Open Library API 결과 매핑
   factory BookSearchResult.fromOpenLibrary(Map<String, dynamic> doc) {
     // 저자 파싱
     final authors = doc['author_name'] as List<dynamic>?;
@@ -101,17 +134,20 @@ class BookSearchResult {
       coverUrl = 'https://covers.openlibrary.org/b/id/$coverId-M.jpg';
     }
 
-    // 페이지 수
-    final pageCount = (doc['number_of_pages_median'] as num?)?.toInt() ?? 0;
+    // ISBN 파싱
+    String isbn = '';
+    final isbns = doc['isbn'] as List<dynamic>?;
+    if (isbns != null && isbns.isNotEmpty) {
+      isbn = isbns.first.toString();
+    }
 
     return BookSearchResult(
       title: doc['title']?.toString() ?? '제목 없음',
       author: author,
       publisher: publisher,
       coverUrl: coverUrl,
-      totalPages: pageCount,
-      description: '',
-      isbn: (doc['isbn'] as List<dynamic>?)?.firstOrNull?.toString() ?? '',
+      totalPages: (doc['number_of_pages_median'] as num?)?.toInt() ?? 0,
+      isbn: isbn,
     );
   }
 }

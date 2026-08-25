@@ -10,4 +10,7 @@ class AppConstants {
 
   // Settings Keys
   static const String themeModeKey = 'theme_mode_key';
+  static const String notificationEnabledKey = 'notification_enabled_key';
+  static const String notificationHourKey = 'notification_hour_key';
+  static const String notificationMinuteKey = 'notification_minute_key';
 }

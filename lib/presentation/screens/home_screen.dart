@@ -153,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               else
                 SliverPadding(
                   padding: const EdgeInsets.only(
-                      left: 16, right: 16, top: 8, bottom: 90),
+                      left: 16, right: 16, top: 8, bottom: 110),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -196,6 +196,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required BuildContext context,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
 
     return ChoiceChip(
       label: Text(label),
@@ -206,27 +207,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       },
       selectedColor: isDark
-          ? AppTheme.primaryLight.withValues(alpha: 0.25)
-          : AppTheme.primaryColor.withValues(alpha: 0.12),
+          ? primary.withValues(alpha: 0.22)
+          : primary.withValues(alpha: 0.1),
       backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       labelStyle: TextStyle(
-        fontSize: 13,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        fontSize: 12.5,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         color: isSelected
-            ? (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+            ? primary
             : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         side: BorderSide(
           color: isSelected
-              ? (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-              : (isDark ? AppTheme.darkBorder : AppTheme.borderColor),
-          width: isSelected ? 1.5 : 1.0,
+              ? primary
+              : (isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0)),
+          width: isSelected ? 1.4 : 0.8,
         ),
       ),
       showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     );
   }
 

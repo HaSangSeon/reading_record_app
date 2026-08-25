@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../core/ads/admob_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
+import '../../providers/repository_providers.dart';
 import '../controllers/book_controller.dart';
 import 'book_search_dialog.dart';
 
@@ -64,6 +67,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
 
   late bool _isCompleted;
   late double _rating;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -101,6 +105,59 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _coverUrlController.text = pickedFile.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미지 가져오기 실패: $e')),
+        );
+      }
+    }
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryColor),
+              title: const Text('갤러리에서 선택'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded, color: AppTheme.secondaryColor),
+              title: const Text('카메라로 책 표지 촬영'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -115,6 +172,54 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     final memo = _memoController.text.trim();
 
     final isEdit = widget.initialBook != null;
+
+    if (!isEdit) {
+      final allBooksAsync = ref.read(allBooksStreamProvider);
+      final existingBooks = allBooksAsync.value ?? [];
+      final hasDuplicate = existingBooks.any(
+        (b) =>
+            b.title.trim().replaceAll(' ', '') ==
+            title.replaceAll(' ', ''),
+      );
+
+      if (hasDuplicate) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: AppTheme.primaryColor),
+                SizedBox(width: 8),
+                Text('동일한 도서 안내',
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Text(
+                '\'$title\' 도서가 이미 내 서재에 등록되어 있습니다.\n\n새로 추가(N회독)하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('취소'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('새로 추가하기'),
+              ),
+            ],
+          ),
+        );
+
+        if (proceed != true) return;
+      }
+    }
+
     bool success;
 
     if (isEdit) {
@@ -149,12 +254,16 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isEdit ? '도서 정보가 수정되었습니다.' : '새 도서가 등록되었습니다.'),
+          content: Text(
+            isEdit ? '도서 정보가 수정되었습니다.' : '새 도서가 등록되었습니다! 📚',
+          ),
+          backgroundColor: AppTheme.successColor,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
+
+      // 도서 등록/수정 완료 시 3회에 1회 전면 광고 노출
+      AdMobService().triggerActionInterstitial(interval: 3);
     }
   }
 
@@ -162,38 +271,26 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.initialBook != null;
-    final mediaQuery = MediaQuery.of(context);
 
     return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        top: 20,
-        left: 20,
-        right: 20,
-        bottom: mediaQuery.viewInsets.bottom + 24,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 드래그 핸들
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+              // 헤더 및 모드 전환
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -352,16 +449,31 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              // 표지 이미지 URL
+              // 표지 이미지 URL & 사진 촬영/갤러리 선택
               TextFormField(
                 controller: _coverUrlController,
                 decoration: InputDecoration(
-                  labelText: '표지 이미지 URL (선택)',
-                  hintText: 'https://...',
+                  labelText: '표지 이미지 (URL 또는 사진 선택)',
+                  hintText: 'https://... 또는 우측 버튼으로 사진 선택',
                   prefixIcon: Icon(
                     Icons.image_outlined,
                     color:
                         isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  ),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.add_a_photo_outlined, size: 20),
+                        tooltip: '사진 촬영 또는 갤러리 선택',
+                        onPressed: _showImageSourceDialog,
+                      ),
+                      if (_coverUrlController.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () => setState(() => _coverUrlController.clear()),
+                        ),
+                    ],
                   ),
                 ),
               ),

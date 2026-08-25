@@ -54,7 +54,7 @@ class HiveService {
         author: '로버트 C. 마틴',
         publisher: '인사이트',
         coverUrl:
-            'https://images.unsplash.com/photo-1532012164546-f432f2e3edd1?q=80&w=400',
+            'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=400&q=80',
         totalPages: 350,
         readPages: 350,
         isCompleted: true,

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/models/book_model.dart';
 import '../../data/models/book_search_result.dart';
+import '../../providers/repository_providers.dart';
 import '../controllers/book_controller.dart';
 import '../controllers/book_search_controller.dart';
+import '../screens/book_detail_screen.dart';
 import 'book_form_dialog.dart';
 
 class BookSearchDialog extends ConsumerStatefulWidget {
@@ -43,6 +46,8 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final searchState = ref.watch(bookSearchControllerProvider);
+    final allBooksAsync = ref.watch(allBooksStreamProvider);
+    final existingBooks = allBooksAsync.value ?? [];
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
@@ -158,43 +163,33 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
           // 검색 결과 본문
           Expanded(
             child: searchState.when(
-              data: (results) {
-                if (_queryController.text.trim().isEmpty && results.isEmpty) {
+              data: (items) {
+                if (_queryController.text.trim().isEmpty && items.isEmpty) {
                   return _buildInitialGuide(context);
                 }
-
-                if (results.isEmpty) {
+                if (items.isEmpty) {
                   return _buildEmptyResult(context);
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: results.length,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final item = results[index];
-                    return _buildSearchResultItem(context, item);
+                    final item = items[index];
+                    return _buildSearchResultItem(context, item, existingBooks);
                   },
                 );
               },
-              loading: () => Center(
+              loading: () => const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
-                      color: isDark
-                          ? AppTheme.primaryLight
-                          : AppTheme.primaryColor,
-                    ),
-                    const SizedBox(height: 16),
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
                     Text(
-                      '온라인 도서 데이터베이스 검색 중...',
-                      style: TextStyle(
-                        color: isDark
-                            ? AppTheme.darkTextSecondary
-                            : AppTheme.textSecondary,
-                        fontSize: 14,
-                      ),
+                      '국내외 도서 정보를 검색하고 있습니다...',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -234,8 +229,22 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
     );
   }
 
-  Widget _buildSearchResultItem(BuildContext context, BookSearchResult item) {
+  Widget _buildSearchResultItem(
+    BuildContext context,
+    BookSearchResult item,
+    List<Book> existingBooks,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 이미 서재에 등록된 도서인지 확인 (제목 및 저자 매칭)
+    final existingBook = existingBooks.cast<Book?>().firstWhere(
+      (b) =>
+          b != null &&
+          b.title.trim().replaceAll(' ', '') ==
+              item.title.trim().replaceAll(' ', ''),
+      orElse: () => null,
+    );
+    final isAlreadyInLibrary = existingBook != null;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -243,7 +252,10 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
         color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
+          color: isAlreadyInLibrary
+              ? (isDark ? AppTheme.primaryLight.withValues(alpha: 0.5) : AppTheme.primaryColor.withValues(alpha: 0.4))
+              : (isDark ? AppTheme.darkBorder : AppTheme.borderColor),
+          width: isAlreadyInLibrary ? 1.4 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -275,8 +287,9 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => Icon(
                       Icons.menu_book_rounded,
-                      color:
-                          isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
                       size: 28,
                     ),
                   )
@@ -293,17 +306,54 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppTheme.darkTextPrimary
-                        : AppTheme.textPrimary,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                    if (isAlreadyInLibrary) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded,
+                                size: 11, color: Color(0xFF10B981)),
+                            SizedBox(width: 3),
+                            Text(
+                              '서재에 있음',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF10B981),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -350,59 +400,154 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                             ? AppTheme.primaryLight
                             : AppTheme.primaryColor,
                       ),
-                      child:
-                          const Text('수정 후 등록', style: TextStyle(fontSize: 12)),
+                      child: const Text('수정 후 등록',
+                          style: TextStyle(fontSize: 12)),
                     ),
                     const SizedBox(width: 6),
-                    // 즉시 내 서재에 담기
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        final book = item.toBook();
-                        final success = await ref
-                            .read(bookControllerProvider.notifier)
-                            .addBook(
-                              title: book.title,
-                              author: book.author,
-                              publisher: book.publisher,
-                              coverUrl: book.coverUrl,
-                              totalPages: book.totalPages,
-                              memo: book.memo,
-                            );
-
-                        if (context.mounted && success) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  '\'${item.title}\' 도서가 내 서재에 등록되었습니다.'),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.bookmark_add_rounded, size: 14),
-                      label: const Text('내 서재에 담기',
-                          style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppTheme.primaryLight
-                            : AppTheme.primaryColor,
-                        foregroundColor:
-                            isDark ? AppTheme.darkBackground : Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        minimumSize: const Size(0, 32),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                    // 내 서재에 담기 버튼 (중복 여부에 따른 스마트 분기)
+                    if (isAlreadyInLibrary)
+                      OutlinedButton.icon(
+                        onPressed: () => _showDuplicateDialog(
+                            context, item, existingBook),
+                        icon: const Icon(Icons.check_rounded,
+                            size: 14, color: Color(0xFF10B981)),
+                        label: const Text('담김 (중복 확인)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF10B981),
+                            )),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                              color: Color(0xFF10B981), width: 1.2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          minimumSize: const Size(0, 32),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      )
+                    else
+                      ElevatedButton.icon(
+                        onPressed: () => _addBookDirectly(context, item),
+                        icon: const Icon(Icons.bookmark_add_rounded, size: 14),
+                        label: const Text('내 서재에 담기',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                          foregroundColor:
+                              isDark ? AppTheme.darkBackground : Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          minimumSize: const Size(0, 32),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addBookDirectly(
+      BuildContext context, BookSearchResult item) async {
+    final book = item.toBook();
+    final success = await ref.read(bookControllerProvider.notifier).addBook(
+          title: book.title,
+          author: book.author,
+          publisher: book.publisher,
+          coverUrl: book.coverUrl,
+          totalPages: book.totalPages,
+          memo: book.memo,
+        );
+
+    if (context.mounted && success) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('\'${item.title}\' 도서가 내 서재에 등록되었습니다.'),
+          backgroundColor: AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  void _showDuplicateDialog(
+    BuildContext context,
+    BookSearchResult item,
+    Book existingBook,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: AppTheme.primaryColor),
+            SizedBox(width: 8),
+            Text(
+              '이미 서재에 있는 책입니다',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '\'${item.title}\' 도서가 이미 내 서재에 등록되어 있습니다.',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '• 기존 도서로 이동하여 독서 기록을 이어갈 수 있습니다.\n• 새로운 마음으로 다시 읽기(N회독)를 원하시면 새로 추가할 수도 있습니다.',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[700], height: 1.45),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context); // 검색창 닫기
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BookDetailScreen(bookId: existingBook.id),
+                ),
+              );
+            },
+            child: const Text('기존 도서로 이동'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _addBookDirectly(context, item);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('새로 추가하기 (N회독)'),
           ),
         ],
       ),
