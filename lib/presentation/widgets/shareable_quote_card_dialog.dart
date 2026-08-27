@@ -10,6 +10,28 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
 
+class QuoteCardTheme {
+  final String name;
+  final List<Color> gradientColors;
+  final Color textColor;
+  final Color subTextColor;
+  final Color quoteIconColor;
+  final Color quoteBadgeBg;
+  final Color dividerColor;
+  final Color? borderColor;
+
+  const QuoteCardTheme({
+    required this.name,
+    required this.gradientColors,
+    required this.textColor,
+    required this.subTextColor,
+    required this.quoteIconColor,
+    required this.quoteBadgeBg,
+    required this.dividerColor,
+    this.borderColor,
+  });
+}
+
 class ShareableQuoteCardDialog extends StatefulWidget {
   final Book book;
   final Note note;
@@ -37,13 +59,82 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
   final GlobalKey _cardKey = GlobalKey();
   bool _isSharing = false;
   int _selectedThemeIndex = 0;
+  bool _isStoryRatio = false; // false = 1:1, true = 9:16 (Story)
+  bool _useSerifFont = true; // true = 명조/Serif, false = 산세리프
 
-  final List<List<Color>> _cardThemes = [
-    [const Color(0xFF1E1B4B), const Color(0xFF312E81)], // 미드나잇 인디고
-    [const Color(0xFF0F172A), const Color(0xFF1E293B)], // 다크 슬레이트
-    [const Color(0xFF4C1D95), const Color(0xFF7C3AED)], // 로얄 바이올렛
-    [const Color(0xFF1C1917), const Color(0xFF44403C)], // 웜 에스프레소
-    [const Color(0xFF064E3B), const Color(0xFF047857)], // 딥 포레스트
+  final List<QuoteCardTheme> _themes = [
+    // 1. 미드나잇 인디고 (시그니처 다크)
+    QuoteCardTheme(
+      name: '미드나잇',
+      gradientColors: [const Color(0xFF1E1B4B), const Color(0xFF312E81)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFFFBBF24),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.15),
+    ),
+    // 2. 웜 페이퍼 (베이지 양장본 감성)
+    QuoteCardTheme(
+      name: '페이퍼',
+      gradientColors: [const Color(0xFFFBF8F1), const Color(0xFFF2EBE0)],
+      textColor: const Color(0xFF292524),
+      subTextColor: const Color(0xFF78716C),
+      quoteIconColor: const Color(0xFFD97706),
+      quoteBadgeBg: const Color(0xFFE7DFD5),
+      dividerColor: const Color(0xFFD6CEBF),
+      borderColor: const Color(0xFFE0D7C9),
+    ),
+    // 3. 미니멀 화이트 (모던 클린)
+    QuoteCardTheme(
+      name: '미니멀',
+      gradientColors: [const Color(0xFFFFFFFF), const Color(0xFFF8FAFC)],
+      textColor: const Color(0xFF0F172A),
+      subTextColor: const Color(0xFF64748B),
+      quoteIconColor: const Color(0xFF4F46E5),
+      quoteBadgeBg: const Color(0xFFEEF2FF),
+      dividerColor: const Color(0xFFE2E8F0),
+      borderColor: const Color(0xFFE2E8F0),
+    ),
+    // 4. 선셋 로즈 (따뜻한 노을)
+    QuoteCardTheme(
+      name: '선셋',
+      gradientColors: [const Color(0xFF831843), const Color(0xFFBE185D)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFFFDE047),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.18),
+    ),
+    // 5. 딥 포레스트 (차분한 세이지 그린)
+    QuoteCardTheme(
+      name: '포레스트',
+      gradientColors: [const Color(0xFF064E3B), const Color(0xFF047857)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFF6EE7B7),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.15),
+    ),
+    // 6. 다크 오닉스 (차콜 슬레이트)
+    QuoteCardTheme(
+      name: '다크',
+      gradientColors: [const Color(0xFF0F172A), const Color(0xFF1E293B)],
+      textColor: Colors.white,
+      subTextColor: Colors.white60,
+      quoteIconColor: const Color(0xFF38BDF8),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.12),
+      dividerColor: Colors.white.withValues(alpha: 0.12),
+    ),
+    // 7. 로얄 바이올렛 (감성 퍼플)
+    QuoteCardTheme(
+      name: '바이올렛',
+      gradientColors: [const Color(0xFF4C1D95), const Color(0xFF7C3AED)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFFFCD34D),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.15),
+    ),
   ];
 
   String get _displayMainText {
@@ -78,11 +169,21 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
       await file.writeAsBytes(pngBytes);
 
       final xFile = XFile(file.path, mimeType: 'image/png');
+      const playStoreUrl =
+          'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
+
+      final shareText = StringBuffer()
+        ..writeln('“$_displayMainText”')
+        ..writeln('- 《${widget.book.title}》 (${widget.book.author})')
+        ..writeln()
+        ..writeln('✨ 나만의 인생 문장을 기록하고 감성 카드로 공유해보세요.')
+        ..write('📱 독서노트 무료 다운로드: $playStoreUrl');
+
       await SharePlus.instance.share(
         ShareParams(
           files: [xFile],
           subject: '독서한줄 - ${widget.book.title}',
-          text: '“$_displayMainText”\n- 《${widget.book.title}》 (${widget.book.author})\n#독서한줄 #독서기록',
+          text: shareText.toString(),
         ),
       );
     } catch (e) {
@@ -107,6 +208,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
     final book = widget.book;
     final note = widget.note;
     final dateStr = DateFormat('yyyy.MM.dd').format(note.createdAt);
+    final currentTheme = _themes[_selectedThemeIndex];
 
     return Container(
       decoration: BoxDecoration(
@@ -129,7 +231,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
               child: Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
+                margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(2),
@@ -150,7 +252,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '감성 문장 카드 공유',
+                      '감성 문장 카드 스튜디오',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -169,31 +271,113 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+
+            // 비율 & 폰트 스타일 퀵 토글 바
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // 비율 선택 세그먼트 (1:1 피드 vs 9:16 스토리)
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF111827) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildRatioChip(
+                        label: '1:1 피드',
+                        icon: Icons.crop_square_rounded,
+                        isSelected: !_isStoryRatio,
+                        onTap: () => setState(() => _isStoryRatio = false),
+                        isDark: isDark,
+                      ),
+                      _buildRatioChip(
+                        label: '9:16 스토리',
+                        icon: Icons.crop_portrait_rounded,
+                        isSelected: _isStoryRatio,
+                        onTap: () => setState(() => _isStoryRatio = true),
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 폰트 스타일 토글 (명조체 vs 고딕체)
+                InkWell(
+                  onTap: () => setState(() => _useSerifFont = !_useSerifFont),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF111827) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.font_download_rounded,
+                          size: 14,
+                          color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          _useSerifFont ? '명조 감성' : '고딕 산세리프',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
 
             // 캡처 대상 감성 카드 (프리미엄 렌더링)
             RepaintBoundary(
               key: _cardKey,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                constraints: BoxConstraints(
+                  minHeight: _isStoryRatio ? 420 : 260,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: _isStoryRatio ? 36 : 24,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: _cardThemes[_selectedThemeIndex],
+                    colors: currentTheme.gradientColors,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
+                  border: currentTheme.borderColor != null
+                      ? Border.all(color: currentTheme.borderColor!, width: 1)
+                      : null,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 16,
+                      color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.18),
+                      blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: _isStoryRatio ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // 상단 헤더: 따옴표 + 워터마크
@@ -203,27 +387,27 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: currentTheme.quoteBadgeBg,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.format_quote_rounded,
-                            color: Color(0xFFFBBF24),
+                            color: currentTheme.quoteIconColor,
                             size: 22,
                           ),
                         ),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.auto_stories_rounded,
-                              color: Colors.white70,
+                              color: currentTheme.subTextColor,
                               size: 13,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '독서한줄',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
+                                color: currentTheme.subTextColor,
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
@@ -233,17 +417,19 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+
+                    SizedBox(height: _isStoryRatio ? 36 : 20),
 
                     // 메인 인용 문장
                     Text(
                       '“$_displayMainText”',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        height: 1.6,
+                      style: TextStyle(
+                        color: currentTheme.textColor,
+                        fontSize: _isStoryRatio ? 18.5 : 16.5,
+                        height: 1.65,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.3,
+                        fontFamily: _useSerifFont ? 'serif' : null,
                       ),
                     ),
 
@@ -253,18 +439,20 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                       Text(
                         _displaySubMemo!,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.75),
+                          color: currentTheme.subTextColor,
                           fontSize: 13,
-                          height: 1.45,
+                          height: 1.5,
+                          fontFamily: _useSerifFont ? 'serif' : null,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 22),
+
+                    SizedBox(height: _isStoryRatio ? 36 : 22),
 
                     // 구분선
                     Container(
                       height: 1,
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: currentTheme.dividerColor,
                     ),
                     const SizedBox(height: 14),
 
@@ -280,8 +468,8 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                                 book.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: currentTheme.textColor,
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -292,7 +480,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color: currentTheme.subTextColor,
                                   fontSize: 11.5,
                                 ),
                               ),
@@ -302,7 +490,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                         Text(
                           dateStr,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: currentTheme.subTextColor,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -313,45 +501,59 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
-            // 테마 색상 선택기
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_cardThemes.length, (index) {
-                final isSelected = _selectedThemeIndex == index;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedThemeIndex = index),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: _cardThemes[index],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected
-                            ? (isDark ? Colors.white : AppTheme.primaryColor)
-                            : Colors.transparent,
-                        width: 2.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+            // 테마 색상 선택기 (7가지 감성 프리셋)
+            SizedBox(
+              height: 48,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _themes.length,
+                itemBuilder: (context, index) {
+                  final theme = _themes[index];
+                  final isSelected = _selectedThemeIndex == index;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedThemeIndex = index),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: theme.gradientColors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? (isDark ? Colors.amberAccent : AppTheme.primaryColor)
+                              : (theme.borderColor ?? Colors.black12),
+                          width: isSelected ? 2.5 : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          theme.name,
+                          style: TextStyle(
+                            color: theme.textColor,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                },
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
             // 하단 버튼 영역 (문장 복사 & 이미지 카드 공유)
             Row(
@@ -359,13 +561,16 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
+                      const playStoreUrl =
+                          'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
                       await Clipboard.setData(ClipboardData(
-                        text: '“$_displayMainText”\n- 《${book.title}》 (${book.author})',
+                        text:
+                            '“$_displayMainText”\n- 《${book.title}》 (${book.author})\n\n📱 독서노트 무료 다운로드: $playStoreUrl',
                       ));
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('문장이 클립보드에 복사되었습니다. 📋'),
+                            content: Text('문장과 앱 링크가 클립보드에 복사되었습니다. 📋'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -397,7 +602,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.share_rounded, size: 18),
-                    label: Text(_isSharing ? '카드 생성 중...' : '이미지 공유하기'),
+                    label: Text(_isSharing ? '고화질 카드 생성 중...' : '이미지 공유하기'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4F46E5),
                       foregroundColor: Colors.white,
@@ -410,6 +615,50 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatioChip({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
+              ),
             ),
           ],
         ),

@@ -61,15 +61,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
         actions: [
-          // 온라인 도서 검색 버튼
-          IconButton(
-            icon: Icon(
-              Icons.travel_explore_rounded,
-              color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-            ),
-            tooltip: '온라인 도서 검색 및 등록',
-            onPressed: () => BookSearchDialog.show(context),
-          ),
           // 내 서재 내 검색 버튼
           IconButton(
             icon:
@@ -99,6 +90,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(width: 4),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddBookOptions(context),
+        icon: const Icon(Icons.add_rounded, size: 22),
+        label: const Text(
+          '책 등록',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.3,
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+        foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
       body: filteredBooksAsync.when(
         data: (books) {
@@ -153,7 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               else
                 SliverPadding(
                   padding: const EdgeInsets.only(
-                      left: 16, right: 16, top: 8, bottom: 110),
+                      left: 16, right: 16, top: 8, bottom: 90),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -177,14 +186,100 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Text('오류가 발생했습니다: $err'),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => BookFormDialog.show(context),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          '도서 등록',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+    );
+  }
+
+  void _showAddBookOptions(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    '새 책 등록',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.travel_explore_rounded,
+                        color: primary, size: 24),
+                  ),
+                  title: const Text(
+                    '온라인 도서 검색',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                  subtitle: const Text(
+                    '국립중앙도서관/카카오 API로 도서 정보 자동 등록',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    BookSearchDialog.show(context);
+                  },
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit_note_rounded,
+                        color: AppTheme.accentColor, size: 24),
+                  ),
+                  title: const Text(
+                    '직접 입력하여 등록',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                  subtitle: const Text(
+                    '표지 사진 첨부 및 수기 정보 입력',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    BookFormDialog.show(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

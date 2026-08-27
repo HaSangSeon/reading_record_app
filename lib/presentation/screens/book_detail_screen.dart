@@ -9,7 +9,6 @@ import '../controllers/note_controller.dart';
 import '../widgets/book_form_dialog.dart';
 import '../widgets/note_card.dart';
 import '../widgets/note_form_dialog.dart';
-import '../widgets/reading_progress_dialog.dart';
 
 class BookDetailScreen extends ConsumerWidget {
   final String bookId;
@@ -53,20 +52,6 @@ class BookDetailScreen extends ConsumerWidget {
               style: const TextStyle(fontSize: 18),
             ),
             actions: [
-              IconButton(
-                icon: Icon(
-                  book.isCompleted
-                      ? Icons.check_circle_rounded
-                      : Icons.check_circle_outline_rounded,
-                  color: book.isCompleted
-                      ? AppTheme.successColor
-                      : (isDark ? AppTheme.darkTextLight : AppTheme.textSecondary),
-                ),
-                tooltip: book.isCompleted ? '읽는 중으로 변경' : '완독으로 표시',
-                onPressed: () => ref
-                    .read(bookControllerProvider.notifier)
-                    .toggleCompletion(book.id),
-              ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
                 onSelected: (value) async {
@@ -423,87 +408,102 @@ class BookDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
 
-          // 독서 진행률 바 및 퀵 기록 버튼
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                    decoration: BoxDecoration(
-                      color: book.isCompleted
-                          ? AppTheme.successColor.withValues(alpha: isDark ? 0.2 : 0.12)
-                          : (isDark
-                                  ? AppTheme.primaryLight
-                                  : AppTheme.primaryColor)
-                              .withValues(alpha: isDark ? 0.2 : 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      book.isCompleted
-                          ? '🎉 완독 완료'
-                          : '📖 ${book.progressPercentage}% 진행 중',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w800,
+          // 독서 상태 및 완독 전환 바 (균형 잡힌 레이아웃 & 높이 통일)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF111827) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // 독서 상태 뱃지
+                Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: book.isCompleted
+                        ? AppTheme.successColor.withValues(alpha: isDark ? 0.22 : 0.12)
+                        : (isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor)
+                            .withValues(alpha: isDark ? 0.22 : 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        book.isCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.auto_stories_rounded,
+                        size: 17,
                         color: book.isCompleted
                             ? AppTheme.successColor
                             : (isDark
                                 ? AppTheme.primaryLight
                                 : AppTheme.primaryColor),
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      Text(
+                        book.isCompleted ? '완독 완료' : '읽는 중',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: book.isCompleted
+                              ? AppTheme.successColor
+                              : (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    book.totalPages > 0
-                        ? '${book.readPages} / ${book.totalPages} p'
-                        : '${book.readPages} p',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppTheme.darkTextSecondary
-                          : AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              OutlinedButton.icon(
-                onPressed: () => ReadingProgressDialog.show(context, book),
-                icon: const Icon(Icons.bookmark_added_outlined, size: 15),
-                label: const Text('페이지 수정', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                style: OutlinedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  side: BorderSide(
-                    color: isDark
-                        ? AppTheme.primaryLight.withValues(alpha: 0.6)
-                        : AppTheme.primaryColor.withValues(alpha: 0.6),
-                  ),
-                  foregroundColor:
-                      isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: book.progress,
-              minHeight: 6,
-              backgroundColor:
-                  isDark ? AppTheme.darkBorder : const Color(0xFFEEF2F6),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                book.isCompleted
-                    ? AppTheme.successColor
-                    : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor),
-              ),
+                // 완독 / 다시 읽기 전환 버튼 (높이 38dp로 뱃지와 완벽 정렬)
+                SizedBox(
+                  height: 38,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(bookControllerProvider.notifier)
+                          .toggleCompletion(book.id);
+                    },
+                    icon: Icon(
+                      book.isCompleted
+                          ? Icons.restart_alt_rounded
+                          : Icons.task_alt_rounded,
+                      size: 16,
+                    ),
+                    label: Text(
+                      book.isCompleted ? '다시 읽기' : '완독으로 완료',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: book.isCompleted
+                          ? (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))
+                          : AppTheme.successColor,
+                      foregroundColor: book.isCompleted
+                          ? (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+                          : Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 

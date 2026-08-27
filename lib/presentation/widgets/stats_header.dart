@@ -11,7 +11,6 @@ class StatsHeader extends StatelessWidget {
     final totalBooks = books.length;
     final readingBooks = books.where((b) => !b.isCompleted).length;
     final completedBooks = books.where((b) => b.isCompleted).length;
-    final totalReadPages = books.fold<int>(0, (sum, b) => sum + b.readPages);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 14),
@@ -102,7 +101,7 @@ class StatsHeader extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             totalBooks > 0
-                                ? '누적 $totalReadPages 페이지의 지혜를 쌓았어요 ✨'
+                                ? '총 $totalBooks권 중 $completedBooks권을 완독했어요 ✨'
                                 : '첫 도서를 등록하고 나만의 서재를 가꿔보세요',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.88),
@@ -159,9 +158,14 @@ class StatsHeader extends StatelessWidget {
                     children: [
                       _buildStatItem('읽는 중', '$readingBooks권', Icons.local_fire_department_rounded, const Color(0xFFFBBF24)),
                       _buildDivider(),
-                      _buildStatItem('완독', '$completedBooks권', Icons.check_circle_rounded, const Color(0xFF34D399)),
+                      _buildStatItem('완독 완료', '$completedBooks권', Icons.check_circle_rounded, const Color(0xFF34D399)),
                       _buildDivider(),
-                      _buildStatItem('누적 페이지', '$totalReadPages p', Icons.menu_book_rounded, Colors.white),
+                      _buildStatItem(
+                        '완독률',
+                        '${totalBooks > 0 ? (completedBooks / totalBooks * 100).toInt() : 0}%',
+                        Icons.auto_awesome_rounded,
+                        const Color(0xFFA5B4FC),
+                      ),
                     ],
                   ),
                 ),

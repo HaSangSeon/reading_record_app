@@ -60,8 +60,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
   late TextEditingController _titleController;
   late TextEditingController _authorController;
   late TextEditingController _publisherController;
-  late TextEditingController _totalPagesController;
-  late TextEditingController _readPagesController;
   late TextEditingController _coverUrlController;
   late TextEditingController _memoController;
 
@@ -79,12 +77,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         TextEditingController(text: b?.author ?? widget.initialAuthor ?? '');
     _publisherController = TextEditingController(
         text: b?.publisher ?? widget.initialPublisher ?? '');
-    _totalPagesController = TextEditingController(
-        text: (b?.totalPages ?? widget.initialTotalPages ?? 0) > 0
-            ? (b?.totalPages ?? widget.initialTotalPages).toString()
-            : '');
-    _readPagesController = TextEditingController(
-        text: (b?.readPages ?? 0) > 0 ? b!.readPages.toString() : '');
     _coverUrlController = TextEditingController(
         text: b?.coverUrl ?? widget.initialCoverUrl ?? '');
     _memoController = TextEditingController(text: b?.memo ?? '');
@@ -98,8 +90,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     _titleController.dispose();
     _authorController.dispose();
     _publisherController.dispose();
-    _totalPagesController.dispose();
-    _readPagesController.dispose();
     _coverUrlController.dispose();
     _memoController.dispose();
     super.dispose();
@@ -164,8 +154,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     final title = _titleController.text.trim();
     final author = _authorController.text.trim();
     final publisher = _publisherController.text.trim();
-    final totalPages = int.tryParse(_totalPagesController.text.trim()) ?? 0;
-    final readPages = int.tryParse(_readPagesController.text.trim()) ?? 0;
     final coverUrl = _coverUrlController.text.trim().isEmpty
         ? null
         : _coverUrlController.text.trim();
@@ -227,8 +215,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         title: title,
         author: author,
         publisher: publisher,
-        totalPages: totalPages,
-        readPages: readPages,
         coverUrl: coverUrl,
         isCompleted: _isCompleted,
         rating: _rating,
@@ -241,8 +227,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
             title: title,
             author: author,
             publisher: publisher,
-            totalPages: totalPages,
-            readPages: readPages,
             coverUrl: coverUrl,
             isCompleted: _isCompleted,
             rating: _rating,
@@ -398,47 +382,6 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                         hintText: '나무옆의자',
                         prefixIcon: Icon(
                           Icons.business_outlined,
-                          color: isDark
-                              ? AppTheme.primaryLight
-                              : AppTheme.primaryColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // 전체 페이지 & 읽은 페이지
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _totalPagesController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: '총 페이지 수',
-                        hintText: '300',
-                        suffixText: 'p',
-                        prefixIcon: Icon(
-                          Icons.auto_stories_outlined,
-                          color: isDark
-                              ? AppTheme.primaryLight
-                              : AppTheme.primaryColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _readPagesController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: '현재 읽은 페이지',
-                        hintText: '0',
-                        suffixText: 'p',
-                        prefixIcon: Icon(
-                          Icons.bookmark_outline_rounded,
                           color: isDark
                               ? AppTheme.primaryLight
                               : AppTheme.primaryColor,
