@@ -8,18 +8,20 @@ final bookSearchServiceProvider = Provider<BookSearchService>((ref) {
 });
 
 /// 온라인 도서 검색 상태 컨트롤러 프로바이더
-final bookSearchControllerProvider = StateNotifierProvider.autoDispose<
-    BookSearchController, AsyncValue<List<BookSearchResult>>>((ref) {
-  final service = ref.watch(bookSearchServiceProvider);
-  return BookSearchController(service);
-});
+final bookSearchControllerProvider =
+    StateNotifierProvider.autoDispose<
+      BookSearchController,
+      AsyncValue<List<BookSearchResult>>
+    >((ref) {
+      final service = ref.watch(bookSearchServiceProvider);
+      return BookSearchController(service);
+    });
 
 class BookSearchController
     extends StateNotifier<AsyncValue<List<BookSearchResult>>> {
   final BookSearchService _service;
 
-  BookSearchController(this._service)
-      : super(const AsyncValue.data([]));
+  BookSearchController(this._service) : super(const AsyncValue.data([]));
 
   /// 온라인 도서 검색 실행
   Future<void> search(String query) async {

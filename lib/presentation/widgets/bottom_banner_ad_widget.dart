@@ -29,12 +29,13 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
     // 기기 화면 가로 폭 100%를 가져와서 꽉 차는 적응형 배너 사이즈 생성
     final width = MediaQuery.of(context).size.width.truncate();
     final orientation = MediaQuery.of(context).orientation;
-    
+
     // ignore: deprecated_member_use
-    final size = await AdSize.getAnchoredAdaptiveBannerAdSize(orientation, width) ??
+    final size =
+        await AdSize.getAnchoredAdaptiveBannerAdSize(orientation, width) ??
         // ignore: deprecated_member_use
         await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
-        
+
     if (size == null) return;
 
     _adSize = size;
@@ -53,7 +54,9 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
           }
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('[BottomBannerAdWidget] 적응형 배너 로드 실패: ${error.message} (code: ${error.code})');
+          debugPrint(
+            '[BottomBannerAdWidget] 적응형 배너 로드 실패: ${error.message} (code: ${error.code})',
+          );
           ad.dispose();
           if (mounted) {
             setState(() {

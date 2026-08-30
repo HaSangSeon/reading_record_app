@@ -74,7 +74,8 @@ class HiveService {
         id: 'sample-note-1',
         bookId: 'sample-book-1',
         pageNumber: 56,
-        quotation: '결국 삶은 관계였고 관계는 소통이었다. 행복은 멀리 있지 않고 내 옆의 사람들과 마음을 나누는 데 있었다.',
+        quotation:
+            '결국 삶은 관계였고 관계는 소통이었다. 행복은 멀리 있지 않고 내 옆의 사람들과 마음을 나누는 데 있었다.',
         content: '독고 씨의 따뜻한 시선과 배려가 기억에 남는 문장. 사소한 친절이 사람을 살린다.',
         createdAt: now.subtract(const Duration(days: 3, hours: 2)),
       );

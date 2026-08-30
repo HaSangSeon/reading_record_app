@@ -13,7 +13,7 @@ class BackupService {
   final HiveService _hiveService;
 
   BackupService({HiveService? hiveService})
-      : _hiveService = hiveService ?? HiveService();
+    : _hiveService = hiveService ?? HiveService();
 
   /// 모든 도서 및 독서 기록을 JSON 문자열로 내보내기
   Future<String> exportToJson() async {
@@ -36,19 +36,24 @@ class BackupService {
   }
 
   /// 백업 JSON 파일을 생성하고 카카오톡/구글드라이브/파일 등으로 공유
-  Future<({bool success, String? filePath, int books, int notes})> exportBackupFileAndShare() async {
+  Future<({bool success, String? filePath, int books, int notes})>
+  exportBackupFileAndShare() async {
     final jsonString = await exportToJson();
     final tempDir = await getTemporaryDirectory();
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final fileName = '독서한줄_백업_$timestamp.json';
     final file = File('${tempDir.path}/$fileName');
-    
+
     await file.writeAsString(jsonString, encoding: utf8);
 
     final booksCount = _hiveService.bookBox.length;
     final notesCount = _hiveService.noteBox.length;
 
-    final xFile = XFile(file.path, mimeType: 'application/json', name: fileName);
+    final xFile = XFile(
+      file.path,
+      mimeType: 'application/json',
+      name: fileName,
+    );
     await SharePlus.instance.share(
       ShareParams(
         files: [xFile],
@@ -66,13 +71,10 @@ class BackupService {
   }
 
   /// 파일 선택기로 백업 JSON 파일을 선택하여 데이터 복원
-  Future<({bool success, int books, int notes, String? error})> pickAndImportBackupFile({
-    bool overwrite = false,
-  }) async {
+  Future<({bool success, int books, int notes, String? error})>
+  pickAndImportBackupFile({bool overwrite = false}) async {
     try {
-      final files = await FilePicker.pickFiles(
-        type: FileType.any,
-      );
+      final files = await FilePicker.pickFiles(type: FileType.any);
 
       if (files.isEmpty || files.first.path == null) {
         return (success: false, books: 0, notes: 0, error: '선택된 파일이 없습니다.');
@@ -80,7 +82,7 @@ class BackupService {
 
       final file = File(files.first.path!);
       final content = await file.readAsString(encoding: utf8);
-      
+
       final restored = await importFromJson(content, overwrite: overwrite);
       return (
         success: true,
@@ -93,7 +95,10 @@ class BackupService {
         success: false,
         books: 0,
         notes: 0,
-        error: e.toString().replaceFirst('Exception: ', '').replaceFirst('FormatException: ', ''),
+        error: e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .replaceFirst('FormatException: ', ''),
       );
     }
   }

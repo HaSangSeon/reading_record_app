@@ -37,8 +37,10 @@ final allNotesStreamProvider = StreamProvider<List<Note>>((ref) {
 });
 
 /// 특정 도서의 독서 노트 목록 실시간 감지 스트림 프로바이더
-final notesByBookStreamProvider =
-    StreamProvider.family<List<Note>, String>((ref, bookId) {
+final notesByBookStreamProvider = StreamProvider.family<List<Note>, String>((
+  ref,
+  bookId,
+) {
   final noteRepo = ref.watch(noteRepositoryProvider);
   return noteRepo.watchNotesByBookId(bookId);
 });

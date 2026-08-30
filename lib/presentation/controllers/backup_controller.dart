@@ -10,17 +10,17 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 
 final backupControllerProvider =
     StateNotifierProvider<BackupController, AsyncValue<void>>((ref) {
-  final backupService = ref.watch(backupServiceProvider);
-  final hiveService = ref.watch(hiveServiceProvider);
-  return BackupController(backupService, hiveService);
-});
+      final backupService = ref.watch(backupServiceProvider);
+      final hiveService = ref.watch(hiveServiceProvider);
+      return BackupController(backupService, hiveService);
+    });
 
 class BackupController extends StateNotifier<AsyncValue<void>> {
   final BackupService _backupService;
   final HiveService _hiveService;
 
   BackupController(this._backupService, this._hiveService)
-      : super(const AsyncValue.data(null));
+    : super(const AsyncValue.data(null));
 
   /// JSON 문자열 내보내기
   Future<String?> exportData() async {
@@ -36,7 +36,8 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
   }
 
   /// 백업 파일 생성 후 카카오톡/구글 드라이브 등으로 즉시 공유
-  Future<({bool success, int books, int notes, String? error})> exportAndShareFile() async {
+  Future<({bool success, int books, int notes, String? error})>
+  exportAndShareFile() async {
     state = const AsyncValue.loading();
     try {
       final result = await _backupService.exportBackupFileAndShare();
@@ -49,12 +50,7 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
       );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-      return (
-        success: false,
-        books: 0,
-        notes: 0,
-        error: e.toString(),
-      );
+      return (success: false, books: 0, notes: 0, error: e.toString());
     }
   }
 
@@ -64,17 +60,14 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final result = await _backupService.pickAndImportBackupFile(overwrite: overwrite);
+      final result = await _backupService.pickAndImportBackupFile(
+        overwrite: overwrite,
+      );
       state = const AsyncValue.data(null);
       return result;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-      return (
-        success: false,
-        books: 0,
-        notes: 0,
-        error: e.toString(),
-      );
+      return (success: false, books: 0, notes: 0, error: e.toString());
     }
   }
 
@@ -102,7 +95,10 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
         success: false,
         books: 0,
         notes: 0,
-        error: e.toString().replaceFirst('Exception: ', '').replaceFirst('FormatException: ', ''),
+        error: e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .replaceFirst('FormatException: ', ''),
       );
     }
   }

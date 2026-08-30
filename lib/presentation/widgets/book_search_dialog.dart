@@ -200,8 +200,11 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.cloud_off_rounded,
-                          size: 48, color: Colors.orangeAccent),
+                      const Icon(
+                        Icons.cloud_off_rounded,
+                        size: 48,
+                        color: Colors.orangeAccent,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         '$err',
@@ -253,7 +256,9 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isAlreadyInLibrary
-              ? (isDark ? AppTheme.primaryLight.withValues(alpha: 0.5) : AppTheme.primaryColor.withValues(alpha: 0.4))
+              ? (isDark
+                    ? AppTheme.primaryLight.withValues(alpha: 0.5)
+                    : AppTheme.primaryColor.withValues(alpha: 0.4))
               : (isDark ? AppTheme.darkBorder : AppTheme.borderColor),
           width: isAlreadyInLibrary ? 1.4 : 1.0,
         ),
@@ -295,8 +300,9 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                   )
                 : Icon(
                     Icons.menu_book_rounded,
-                    color:
-                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                    color: isDark
+                        ? AppTheme.primaryLight
+                        : AppTheme.primaryColor,
                     size: 28,
                   ),
           ),
@@ -327,19 +333,28 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.4),
                           ),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check_circle_rounded,
-                                size: 11, color: Color(0xFF10B981)),
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 11,
+                              color: Color(0xFF10B981),
+                            ),
                             SizedBox(width: 3),
                             Text(
                               '서재에 있음',
@@ -388,10 +403,7 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        BookFormDialog.show(
-                          context,
-                          book: item.toBook(),
-                        );
+                        BookFormDialog.show(context, book: item.toBook());
                       },
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -400,51 +412,71 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                             ? AppTheme.primaryLight
                             : AppTheme.primaryColor,
                       ),
-                      child: const Text('수정 후 등록',
-                          style: TextStyle(fontSize: 12)),
+                      child: const Text(
+                        '수정 후 등록',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                     const SizedBox(width: 6),
                     // 내 서재에 담기 버튼 (중복 여부에 따른 스마트 분기)
                     if (isAlreadyInLibrary)
                       OutlinedButton.icon(
-                        onPressed: () => _showDuplicateDialog(
-                            context, item, existingBook),
-                        icon: const Icon(Icons.check_rounded,
-                            size: 14, color: Color(0xFF10B981)),
-                        label: const Text('담김 (중복 확인)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF10B981),
-                            )),
+                        onPressed: () =>
+                            _showDuplicateDialog(context, item, existingBook),
+                        icon: const Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: Color(0xFF10B981),
+                        ),
+                        label: const Text(
+                          '담김 (중복 확인)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
-                              color: Color(0xFF10B981), width: 1.2),
+                            color: Color(0xFF10B981),
+                            width: 1.2,
+                          ),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           minimumSize: const Size(0, 32),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       )
                     else
                       ElevatedButton.icon(
                         onPressed: () => _addBookDirectly(context, item),
                         icon: const Icon(Icons.bookmark_add_rounded, size: 14),
-                        label: const Text('내 서재에 담기',
-                            style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          '내 서재에 담기',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark
                               ? AppTheme.primaryLight
                               : AppTheme.primaryColor,
-                          foregroundColor:
-                              isDark ? AppTheme.darkBackground : Colors.white,
+                          foregroundColor: isDark
+                              ? AppTheme.darkBackground
+                              : Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           minimumSize: const Size(0, 32),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                   ],
@@ -458,9 +490,13 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
   }
 
   Future<void> _addBookDirectly(
-      BuildContext context, BookSearchResult item) async {
+    BuildContext context,
+    BookSearchResult item,
+  ) async {
     final book = item.toBook();
-    final success = await ref.read(bookControllerProvider.notifier).addBook(
+    final success = await ref
+        .read(bookControllerProvider.notifier)
+        .addBook(
           title: book.title,
           author: book.author,
           publisher: book.publisher,
@@ -476,8 +512,9 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
           content: Text('\'${item.title}\' 도서가 내 서재에 등록되었습니다.'),
           backgroundColor: AppTheme.primaryColor,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -519,7 +556,11 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
               ),
               child: Text(
                 '• 기존 도서로 이동하여 독서 기록을 이어갈 수 있습니다.\n• 새로운 마음으로 다시 읽기(N회독)를 원하시면 새로 추가할 수도 있습니다.',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey[700], height: 1.45),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: Colors.grey[700],
+                  height: 1.45,
+                ),
               ),
             ),
           ],
@@ -618,8 +659,9 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
 
     return ActionChip(
       label: Text(keyword),
-      backgroundColor:
-          isDark ? const Color(0xFF0F172A) : AppTheme.backgroundColor,
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : AppTheme.backgroundColor,
       side: BorderSide(
         color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
       ),

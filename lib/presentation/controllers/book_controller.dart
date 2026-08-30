@@ -10,8 +10,9 @@ final bookSearchQueryProvider = StateProvider<String>((ref) => '');
 /// 도서 목록 필터 상태 (전체 / 읽는 중 / 완독)
 enum BookFilterType { all, reading, completed }
 
-final bookFilterProvider =
-    StateProvider<BookFilterType>((ref) => BookFilterType.all);
+final bookFilterProvider = StateProvider<BookFilterType>(
+  (ref) => BookFilterType.all,
+);
 
 /// 검색 및 필터가 적용된 정제된 도서 목록 프로바이더
 final filteredBooksProvider = Provider<AsyncValue<List<Book>>>((ref) {
@@ -41,9 +42,9 @@ final filteredBooksProvider = Provider<AsyncValue<List<Book>>>((ref) {
 /// 도서 CRUD 및 진행률 변경 컨트롤러
 final bookControllerProvider =
     StateNotifierProvider<BookController, AsyncValue<void>>((ref) {
-  final bookRepo = ref.watch(bookRepositoryProvider);
-  return BookController(bookRepo);
-});
+      final bookRepo = ref.watch(bookRepositoryProvider);
+      return BookController(bookRepo);
+    });
 
 class BookController extends StateNotifier<AsyncValue<void>> {
   final BookRepository _bookRepository;

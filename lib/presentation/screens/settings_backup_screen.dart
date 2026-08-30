@@ -28,6 +28,7 @@ class SettingsBackupScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: AppTheme.buildAppBarFlexibleSpace(isDark),
         title: Row(
           children: [
             Icon(
@@ -39,6 +40,18 @@ class SettingsBackupScreen extends ConsumerWidget {
             const Text('설정 및 데이터 백업'),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
+              color: isDark ? Colors.amberAccent : AppTheme.textSecondary,
+            ),
+            tooltip: isDark ? '라이트 모드로 전환' : '다크 모드로 전환',
+            onPressed: () =>
+                ref.read(themeControllerProvider.notifier).toggleTheme(context),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -61,8 +74,9 @@ class SettingsBackupScreen extends ConsumerWidget {
                 children: [
                   Icon(
                     Icons.shield_outlined,
-                    color:
-                        isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                    color: isDark
+                        ? AppTheme.primaryLight
+                        : AppTheme.primaryColor,
                     size: 32,
                   ),
                   const SizedBox(width: 14),
@@ -117,10 +131,14 @@ class SettingsBackupScreen extends ConsumerWidget {
                       if (!success && val && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('알림 권한이 필요합니다. 기기 설정에서 알림을 허용해주세요.'),
+                            content: const Text(
+                              '알림 권한이 필요합니다. 기기 설정에서 알림을 허용해주세요.',
+                            ),
                             backgroundColor: Colors.redAccent,
                             behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         );
                       }
@@ -128,21 +146,29 @@ class SettingsBackupScreen extends ConsumerWidget {
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                            .withValues(alpha: 0.15),
+                        color:
+                            (isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor)
+                                .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.notifications_active_rounded,
-                        color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                        color: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
                       ),
                     ),
                     title: const Text(
-                      '매일 감성 독서 알림',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      '감성 독서 리마인더 알림',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                     subtitle: const Text(
-                      '지정한 시간에 잠들기 전 편안한 독서 습관을 챙겨주는 리마인더를 보냅니다.',
+                      '원하는 요일과 시간에 편안한 독서 습관을 챙겨주는 리마인더를 보냅니다.',
                       style: TextStyle(fontSize: 12),
                     ),
                   ),
@@ -152,25 +178,38 @@ class SettingsBackupScreen extends ConsumerWidget {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFFF59E0B,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.access_time_rounded,
-                            color: Color(0xFFF59E0B)),
+                        child: const Icon(
+                          Icons.access_time_rounded,
+                          color: Color(0xFFF59E0B),
+                        ),
                       ),
                       title: const Text(
                         '알림 시간 설정',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       subtitle: Text(
-                        '매일 ${notificationState.time.format(context)}에 알림이 발송됩니다.',
+                        '${notificationState.daysSummary} ${notificationState.time.format(context)}에 발송됩니다.',
                         style: const TextStyle(fontSize: 12),
                       ),
                       trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                              .withValues(alpha: isDark ? 0.2 : 0.1),
+                          color:
+                              (isDark
+                                      ? AppTheme.primaryLight
+                                      : AppTheme.primaryColor)
+                                  .withValues(alpha: isDark ? 0.2 : 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -178,7 +217,9 @@ class SettingsBackupScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
                           ),
                         ),
                       ),
@@ -195,6 +236,142 @@ class SettingsBackupScreen extends ConsumerWidget {
                       },
                     ),
                     Divider(height: 1, indent: 64, color: cardBorderColor),
+                    // 요일 선택 섹션
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF6366F1,
+                                  ).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.event_repeat_rounded,
+                                  color: Color(0xFF6366F1),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '반복 요일 선택',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '현재 설정: ${notificationState.daysSummary}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark
+                                            ? AppTheme.primaryLight
+                                            : AppTheme.primaryColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // 빠른 프리셋 버튼 (매일 / 평일 / 주말)
+                          Row(
+                            children: [
+                              _buildWeekdayPresetChip(
+                                label: '매일',
+                                isSelected:
+                                    notificationState.selectedDays.length == 7,
+                                onTap: () => ref
+                                    .read(
+                                      notificationControllerProvider.notifier,
+                                    )
+                                    .setDays(
+                                      [1, 2, 3, 4, 5, 6, 7],
+                                      books: books,
+                                      notes: notes,
+                                    ),
+                                isDark: isDark,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildWeekdayPresetChip(
+                                label: '평일 (월~금)',
+                                isSelected:
+                                    notificationState.selectedDays.length ==
+                                        5 &&
+                                    !notificationState.selectedDays.contains(
+                                      6,
+                                    ) &&
+                                    !notificationState.selectedDays.contains(7),
+                                onTap: () => ref
+                                    .read(
+                                      notificationControllerProvider.notifier,
+                                    )
+                                    .setDays(
+                                      [1, 2, 3, 4, 5],
+                                      books: books,
+                                      notes: notes,
+                                    ),
+                                isDark: isDark,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildWeekdayPresetChip(
+                                label: '주말 (토·일)',
+                                isSelected:
+                                    notificationState.selectedDays.length ==
+                                        2 &&
+                                    notificationState.selectedDays.contains(
+                                      6,
+                                    ) &&
+                                    notificationState.selectedDays.contains(7),
+                                onTap: () => ref
+                                    .read(
+                                      notificationControllerProvider.notifier,
+                                    )
+                                    .setDays(
+                                      [6, 7],
+                                      books: books,
+                                      notes: notes,
+                                    ),
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // 월~일 개별 요일 버튼 리스트
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              for (int d = 1; d <= 7; d++)
+                                _buildDayCircleButton(
+                                  day: d,
+                                  isSelected: notificationState.selectedDays
+                                      .contains(d),
+                                  onTap: () => ref
+                                      .read(
+                                        notificationControllerProvider.notifier,
+                                      )
+                                      .toggleDay(d, books: books, notes: notes),
+                                  isDark: isDark,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, indent: 64, color: cardBorderColor),
                     ListTile(
                       leading: Container(
                         padding: const EdgeInsets.all(8),
@@ -202,12 +379,17 @@ class SettingsBackupScreen extends ConsumerWidget {
                           color: AppTheme.successColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.send_rounded,
-                            color: AppTheme.successColor),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: AppTheme.successColor,
+                        ),
                       ),
                       title: const Text(
                         '지금 즉시 테스트 알림 받기',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       subtitle: const Text(
                         '서재 데이터를 반영한 맞춤 알림이 어떻게 오는지 확인합니다.',
@@ -221,11 +403,14 @@ class SettingsBackupScreen extends ConsumerWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Text('테스트 알림이 발송되었습니다! 상단 알림바를 확인해 보세요.'),
+                              content: const Text(
+                                '테스트 알림이 발송되었습니다! 상단 알림바를 확인해 보세요.',
+                              ),
                               backgroundColor: AppTheme.successColor,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           );
                         }
@@ -274,7 +459,8 @@ class SettingsBackupScreen extends ConsumerWidget {
                     visualDensity: VisualDensity.compact,
                     shape: WidgetStateProperty.all(
                       RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -294,11 +480,19 @@ class SettingsBackupScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildCountItem('등록된 도서', '$booksCount권',
-                        Icons.menu_book_rounded, context),
+                    _buildCountItem(
+                      '등록된 도서',
+                      '$booksCount권',
+                      Icons.menu_book_rounded,
+                      context,
+                    ),
                     Container(height: 36, width: 1, color: cardBorderColor),
-                    _buildCountItem('작성된 독서 기록', '$notesCount개',
-                        Icons.edit_note_rounded, context),
+                    _buildCountItem(
+                      '작성된 독서 기록',
+                      '$notesCount개',
+                      Icons.edit_note_rounded,
+                      context,
+                    ),
                   ],
                 ),
               ),
@@ -319,10 +513,11 @@ class SettingsBackupScreen extends ConsumerWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: (isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor)
-                            .withValues(alpha: 0.15),
+                        color:
+                            (isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor)
+                                .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -353,8 +548,10 @@ class SettingsBackupScreen extends ConsumerWidget {
                         color: AppTheme.successColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.folder_open_rounded,
-                          color: AppTheme.successColor),
+                      child: const Icon(
+                        Icons.folder_open_rounded,
+                        color: AppTheme.successColor,
+                      ),
                     ),
                     title: const Text(
                       '백업 파일 불러오기 (복원)',
@@ -383,17 +580,26 @@ class SettingsBackupScreen extends ConsumerWidget {
                     ),
                     title: const Text(
                       '텍스트 직접 복사 / 붙여넣기 (고급)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: Row(
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.copy_rounded, size: 16),
-                                label: const Text('JSON 복사', style: TextStyle(fontSize: 12)),
+                                label: const Text(
+                                  'JSON 복사',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                                 onPressed: () => _exportDataText(context, ref),
                               ),
                             ),
@@ -401,8 +607,12 @@ class SettingsBackupScreen extends ConsumerWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.paste_rounded, size: 16),
-                                label: const Text('JSON 붙여넣기', style: TextStyle(fontSize: 12)),
-                                onPressed: () => _showImportDialog(context, ref),
+                                label: const Text(
+                                  'JSON 붙여넣기',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                onPressed: () =>
+                                    _showImportDialog(context, ref),
                               ),
                             ),
                           ],
@@ -429,8 +639,10 @@ class SettingsBackupScreen extends ConsumerWidget {
                     color: Colors.redAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.delete_forever_rounded,
-                      color: Colors.redAccent),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    color: Colors.redAccent,
+                  ),
                 ),
                 title: const Text(
                   '모든 데이터 초기화',
@@ -459,12 +671,18 @@ class SettingsBackupScreen extends ConsumerWidget {
                 children: [
                   ListTile(
                     title: Text('앱 버전', style: TextStyle(fontSize: 14)),
-                    trailing: Text('1.0.0 (최신 버전)', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    trailing: Text(
+                      '1.0.0 (최신 버전)',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
                   ),
                   Divider(height: 1, indent: 16),
                   ListTile(
                     title: Text('개발 및 지원', style: TextStyle(fontSize: 14)),
-                    trailing: Text('독서한줄 팀', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    trailing: Text(
+                      '독서한줄 팀',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
                   ),
                 ],
               ),
@@ -492,13 +710,19 @@ class SettingsBackupScreen extends ConsumerWidget {
   }
 
   Widget _buildCountItem(
-      String label, String value, IconData icon, BuildContext context) {
+    String label,
+    String value,
+    IconData icon,
+    BuildContext context,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
-        Icon(icon,
-            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-            size: 24),
+        Icon(
+          icon,
+          color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+          size: 24,
+        ),
         const SizedBox(height: 6),
         Text(
           value,
@@ -522,13 +746,17 @@ class SettingsBackupScreen extends ConsumerWidget {
 
   /// 원클릭 백업 파일 공유
   Future<void> _exportAndShare(BuildContext context, WidgetRef ref) async {
-    final result = await ref.read(backupControllerProvider.notifier).exportAndShareFile();
+    final result = await ref
+        .read(backupControllerProvider.notifier)
+        .exportAndShareFile();
     if (!context.mounted) return;
 
     if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('도서 ${result.books}권, 기록 ${result.notes}개의 백업 파일이 생성되었습니다.'),
+          content: Text(
+            '도서 ${result.books}권, 기록 ${result.notes}개의 백업 파일이 생성되었습니다.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -545,7 +773,9 @@ class SettingsBackupScreen extends ConsumerWidget {
 
   /// 파일 선택기로 복원
   Future<void> _importFromFile(BuildContext context, WidgetRef ref) async {
-    final result = await ref.read(backupControllerProvider.notifier).importFromFile();
+    final result = await ref
+        .read(backupControllerProvider.notifier)
+        .importFromFile();
     if (!context.mounted) return;
 
     if (result.success) {
@@ -568,8 +798,9 @@ class SettingsBackupScreen extends ConsumerWidget {
   }
 
   Future<void> _exportDataText(BuildContext context, WidgetRef ref) async {
-    final jsonStr =
-        await ref.read(backupControllerProvider.notifier).exportData();
+    final jsonStr = await ref
+        .read(backupControllerProvider.notifier)
+        .exportData();
     if (!context.mounted || jsonStr == null) return;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -590,9 +821,7 @@ class SettingsBackupScreen extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF0F172A)
-                  : const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
@@ -604,7 +833,9 @@ class SettingsBackupScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
                 ),
               ),
             ),
@@ -631,7 +862,8 @@ class SettingsBackupScreen extends ConsumerWidget {
                     content: const Text('백업 JSON이 클립보드에 복사되었습니다!'),
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 );
               }
@@ -650,8 +882,10 @@ class SettingsBackupScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('데이터 복원 (JSON 붙여넣기)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          title: const Text(
+            '데이터 복원 (JSON 붙여넣기)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -702,11 +936,14 @@ class SettingsBackupScreen extends ConsumerWidget {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(result.success
-                          ? '데이터 복원 완료! (도서 ${result.books}권, 노트 ${result.notes}개)'
-                          : '복원 실패: ${result.error}'),
-                      backgroundColor:
-                          result.success ? AppTheme.successColor : Colors.redAccent,
+                      content: Text(
+                        result.success
+                            ? '데이터 복원 완료! (도서 ${result.books}권, 노트 ${result.notes}개)'
+                            : '복원 실패: ${result.error}',
+                      ),
+                      backgroundColor: result.success
+                          ? AppTheme.successColor
+                          : Colors.redAccent,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -724,8 +961,13 @@ class SettingsBackupScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('모든 데이터 초기화',
-            style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        title: const Text(
+          '모든 데이터 초기화',
+          style: TextStyle(
+            color: Colors.redAccent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: const Text(
           '정말로 서재의 모든 책과 작성된 독서 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며, 백업 파일이 없다면 복구할 수 없습니다.',
         ),
@@ -748,7 +990,9 @@ class SettingsBackupScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(success ? '모든 데이터가 초기화되었습니다.' : '초기화 실패'),
-                    backgroundColor: success ? Colors.black87 : Colors.redAccent,
+                    backgroundColor: success
+                        ? Colors.black87
+                        : Colors.redAccent,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -757,6 +1001,111 @@ class SettingsBackupScreen extends ConsumerWidget {
             child: const Text('삭제하기'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWeekdayPresetChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    final activeColor = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? activeColor.withValues(alpha: isDark ? 0.25 : 0.12)
+              : (isDark ? const Color(0xFF1E242B) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? activeColor
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+            width: isSelected ? 1.2 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? activeColor
+                : (isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.textSecondary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayCircleButton({
+    required int day,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    const dayNames = {1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토', 7: '일'};
+    final isWeekend = day == 6 || day == 7;
+    final activeColor = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isWeekend
+                    ? (isDark
+                          ? const Color(0xFFE11D48)
+                          : const Color(0xFFE11D48))
+                    : activeColor)
+              : (isDark ? const Color(0xFF182028) : const Color(0xFFF1F5F9)),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+            width: 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isWeekend ? const Color(0xFFE11D48) : activeColor)
+                        .withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            dayNames[day] ?? '',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : (isWeekend
+                        ? (isDark
+                              ? const Color(0xFFF87171)
+                              : const Color(0xFFEF4444))
+                        : (isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary)),
+            ),
+          ),
+        ),
       ),
     );
   }

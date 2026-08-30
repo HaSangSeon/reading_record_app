@@ -21,11 +21,7 @@ void main() async {
   // Google AdMob 초기화
   await AdMobService().init();
 
-  runApp(
-    const ProviderScope(
-      child: ReadingRecordApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: ReadingRecordApp()));
 }
 
 class ReadingRecordApp extends ConsumerWidget {

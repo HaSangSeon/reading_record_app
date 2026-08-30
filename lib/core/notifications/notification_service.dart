@@ -36,8 +36,9 @@ class NotificationService {
       // 타임존 로드 실패 시 기본 UTC 기반 로컬 유지
     }
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/launcher_icon',
+    );
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -63,16 +64,18 @@ class NotificationService {
   /// 알림 권한 요청 (Android 13+ 및 iOS/macOS)
   Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
-      final androidImplementation =
-          _notificationsPlugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-      final granted =
-          await androidImplementation?.requestNotificationsPermission();
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final granted = await androidImplementation
+          ?.requestNotificationsPermission();
       return granted ?? false;
     } else if (Platform.isIOS) {
-      final iosImplementation =
-          _notificationsPlugin.resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>();
+      final iosImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
       final granted = await iosImplementation?.requestPermissions(
         alert: true,
         badge: true,
@@ -80,9 +83,10 @@ class NotificationService {
       );
       return granted ?? false;
     } else if (Platform.isMacOS) {
-      final macImplementation =
-          _notificationsPlugin.resolvePlatformSpecificImplementation<
-              MacOSFlutterLocalNotificationsPlugin>();
+      final macImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin
+          >();
       final granted = await macImplementation?.requestPermissions(
         alert: true,
         badge: true,
@@ -131,32 +135,20 @@ class NotificationService {
     );
   }
 
-  /// 매일 지정된 시각에 반복 실행되는 스마트 독서 알림 스케줄링
-  Future<void> scheduleDailyReminder({
+  /// 지정된 요일(1=월~7=일) 및 시각에 반복 실행되는 스마트 독서 알림 스케줄링
+  Future<void> scheduleReminder({
     required int hour,
     required int minute,
+    required List<int> days,
     List<Book>? books,
     List<Note>? notes,
   }) async {
     await init();
     await cancelDailyReminder();
 
+    if (days.isEmpty) return;
+
     final message = _generateSmartMessage(books: books, notes: notes);
-
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-
-    // 설정한 시각이 이미 오늘 지났다면 다음 날로 설정
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
 
     final androidDetails = AndroidNotificationDetails(
       channelId,
@@ -182,20 +174,59 @@ class NotificationService {
       macOS: darwinDetails,
     );
 
-    try {
-      await _notificationsPlugin.zonedSchedule(
-        id: dailyReminderNotificationId,
-        title: message.title,
-        body: message.body,
-        scheduledDate: scheduledDate,
-        notificationDetails: notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        matchDateTimeComponents: DateTimeComponents.time,
+    final now = tz.TZDateTime.now(tz.local);
+
+    for (final day in days) {
+      if (day < 1 || day > 7) continue;
+
+      var daysUntil = (day - now.weekday) % 7;
+      var scheduledDate = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day + daysUntil,
+        hour,
+        minute,
       );
-      debugPrint('[Notification] 매일 $hour시 $minute분 독서 알림 스케줄 완료');
-    } catch (e) {
-      debugPrint('[Notification] 스케줄링 오류: $e');
+
+      // 오늘인데 이미 시간이 지났으면 7일 후로 스케줄링
+      if (daysUntil == 0 && scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 7));
+      }
+
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id: dailyReminderNotificationId + day,
+          title: message.title,
+          body: message.body,
+          scheduledDate: scheduledDate,
+          notificationDetails: notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+        debugPrint(
+          '[Notification] 요일($day) $hour시 $minute분 독서 알림 스케줄 완료 (id: ${dailyReminderNotificationId + day})',
+        );
+      } catch (e) {
+        debugPrint('[Notification] 요일($day) 스케줄링 오류: $e');
+      }
     }
+  }
+
+  /// 기존 메서드 호환성 유지 (매일 알림)
+  Future<void> scheduleDailyReminder({
+    required int hour,
+    required int minute,
+    List<Book>? books,
+    List<Note>? notes,
+  }) async {
+    await scheduleReminder(
+      hour: hour,
+      minute: minute,
+      days: const [1, 2, 3, 4, 5, 6, 7],
+      books: books,
+      notes: notes,
+    );
   }
 
   /// 즉시 테스트 알림 발송
@@ -240,9 +271,12 @@ class NotificationService {
     );
   }
 
-  /// 알림 취소
+  /// 알림 취소 (기존 단일 ID 및 요일별 101~107 ID 모두 취소)
   Future<void> cancelDailyReminder() async {
     await _notificationsPlugin.cancel(id: dailyReminderNotificationId);
+    for (int day = 1; day <= 7; day++) {
+      await _notificationsPlugin.cancel(id: dailyReminderNotificationId + day);
+    }
   }
 
   /// 모든 알림 취소

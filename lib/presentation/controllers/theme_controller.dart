@@ -14,8 +14,10 @@ class ThemeController extends StateNotifier<ThemeMode> {
 
   void _loadThemeMode() {
     try {
-      final saved = _hiveService.settingsBox
-          .get(AppConstants.themeModeKey, defaultValue: 'system');
+      final saved = _hiveService.settingsBox.get(
+        AppConstants.themeModeKey,
+        defaultValue: 'system',
+      );
       if (saved == 'light') {
         state = ThemeMode.light;
       } else if (saved == 'dark') {
@@ -62,6 +64,6 @@ class ThemeController extends StateNotifier<ThemeMode> {
 /// 테마 모드 프로바이더
 final themeControllerProvider =
     StateNotifierProvider<ThemeController, ThemeMode>((ref) {
-  final hiveService = ref.watch(hiveServiceProvider);
-  return ThemeController(hiveService);
-});
+      final hiveService = ref.watch(hiveServiceProvider);
+      return ThemeController(hiveService);
+    });

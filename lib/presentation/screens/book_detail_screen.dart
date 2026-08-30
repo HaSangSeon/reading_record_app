@@ -6,7 +6,11 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../controllers/book_controller.dart';
 import '../controllers/note_controller.dart';
+import '../controllers/theme_controller.dart';
+import '../widgets/action_bottom_sheet.dart';
+import '../widgets/app_bottom_nav_bar.dart';
 import '../widgets/book_form_dialog.dart';
+import '../widgets/custom_confirm_dialog.dart';
 import '../widgets/note_card.dart';
 import '../widgets/note_form_dialog.dart';
 
@@ -45,6 +49,7 @@ class BookDetailScreen extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
+            flexibleSpace: AppTheme.buildAppBarFlexibleSpace(isDark),
             title: Text(
               book.title,
               maxLines: 1,
@@ -52,38 +57,36 @@ class BookDetailScreen extends ConsumerWidget {
               style: const TextStyle(fontSize: 18),
             ),
             actions: [
-              PopupMenuButton<String>(
+              IconButton(
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
+                  color: isDark ? Colors.amberAccent : AppTheme.textSecondary,
+                ),
+                tooltip: isDark ? '라이트 모드로 전환' : '다크 모드로 전환',
+                onPressed: () => ref
+                    .read(themeControllerProvider.notifier)
+                    .toggleTheme(context),
+              ),
+              IconButton(
                 icon: const Icon(Icons.more_vert_rounded),
-                onSelected: (value) async {
-                  if (value == 'edit') {
-                    BookFormDialog.show(context, book: book);
-                  } else if (value == 'delete') {
-                    _showDeleteConfirm(context, ref, book);
-                  }
+                tooltip: '도서 옵션',
+                onPressed: () {
+                  ActionBottomSheet.showBookActions(
+                    context,
+                    book: book,
+                    onToggleComplete: () async {
+                      await ref
+                          .read(bookControllerProvider.notifier)
+                          .toggleCompletion(book.id);
+                    },
+                    onEdit: () {
+                      BookFormDialog.show(context, book: book);
+                    },
+                    onDelete: () {
+                      _showDeleteConfirm(context, ref, book);
+                    },
+                  );
                 },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('도서 정보 수정'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline_rounded,
-                            size: 18, color: Colors.redAccent),
-                        SizedBox(width: 8),
-                        Text('도서 삭제', style: TextStyle(color: Colors.redAccent)),
-                      ],
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(width: 4),
             ],
@@ -91,9 +94,7 @@ class BookDetailScreen extends ConsumerWidget {
           body: CustomScrollView(
             slivers: [
               // 도서 기본 정보 & 진행률 헤더
-              SliverToBoxAdapter(
-                child: _buildBookHeader(context, ref, book),
-              ),
+              SliverToBoxAdapter(child: _buildBookHeader(context, ref, book)),
 
               // 독서 노트 섹션 타이틀 및 정렬 토글
               SliverToBoxAdapter(
@@ -131,8 +132,9 @@ class BookDetailScreen extends ConsumerWidget {
                       // 정렬 전환 버튼
                       TextButton.icon(
                         onPressed: () {
-                          final current =
-                              ref.read(noteSortOrderProvider(bookId));
+                          final current = ref.read(
+                            noteSortOrderProvider(bookId),
+                          );
                           ref
                               .read(noteSortOrderProvider(bookId).notifier)
                               .state = current == NoteSortOrder.byPage
@@ -141,16 +143,20 @@ class BookDetailScreen extends ConsumerWidget {
                         },
                         icon: const Icon(Icons.sort_rounded, size: 16),
                         label: Text(
-                          sortOrder == NoteSortOrder.byPage
-                              ? '페이지순'
-                              : '최신 작성순',
+                          sortOrder == NoteSortOrder.byPage ? '페이지순' : '최신 작성순',
                           style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: isDark
                               ? AppTheme.primaryLight
                               : AppTheme.primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                         ),
                       ),
                     ],
@@ -170,13 +176,10 @@ class BookDetailScreen extends ConsumerWidget {
                   return SliverPadding(
                     padding: const EdgeInsets.only(bottom: 90),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final note = notes[index];
-                          return NoteCard(book: book, note: note);
-                        },
-                        childCount: notes.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final note = notes[index];
+                        return NoteCard(book: book, note: note);
+                      }, childCount: notes.length),
                     ),
                   );
                 },
@@ -201,9 +204,12 @@ class BookDetailScreen extends ConsumerWidget {
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => NoteFormDialog.show(context, book: book),
             icon: const Icon(Icons.edit_rounded),
-            label: const Text('기록 남기기',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            label: const Text(
+              '기록 남기기',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
           ),
+          bottomNavigationBar: const AppBottomNavBar(isSubScreen: true),
         );
       },
       loading: () => Scaffold(
@@ -213,9 +219,7 @@ class BookDetailScreen extends ConsumerWidget {
           ),
         ),
       ),
-      error: (err, _) => Scaffold(
-        body: Center(child: Text('오류 발생: $err')),
-      ),
+      error: (err, _) => Scaffold(body: Center(child: Text('오류 발생: $err'))),
     );
   }
 
@@ -253,17 +257,21 @@ class BookDetailScreen extends ConsumerWidget {
                 width: 92,
                 height: 136,
                 decoration: BoxDecoration(
-                  color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                      .withValues(alpha: 0.1),
+                  color:
+                      (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? AppTheme.darkBorder
+                        : const Color(0xFFE2E8F0),
                     width: 0.8,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.4 : 0.12,
+                      ),
                       blurRadius: 12,
                       offset: const Offset(2, 6),
                     ),
@@ -278,7 +286,8 @@ class BookDetailScreen extends ConsumerWidget {
                       if (cover == null || cover.isEmpty) {
                         return _buildFallbackCover(book, context);
                       }
-                      if (cover.startsWith('http://') || cover.startsWith('https://')) {
+                      if (cover.startsWith('http://') ||
+                          cover.startsWith('https://')) {
                         return Image.network(
                           cover,
                           fit: BoxFit.cover,
@@ -415,7 +424,9 @@ class BookDetailScreen extends ConsumerWidget {
               color: isDark ? const Color(0xFF111827) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF1F2937)
+                    : const Color(0xFFE2E8F0),
                 width: 0.8,
               ),
             ),
@@ -428,11 +439,13 @@ class BookDetailScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: book.isCompleted
-                        ? AppTheme.successColor.withValues(alpha: isDark ? 0.22 : 0.12)
+                        ? AppTheme.successColor.withValues(
+                            alpha: isDark ? 0.22 : 0.12,
+                          )
                         : (isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor)
-                            .withValues(alpha: isDark ? 0.22 : 0.1),
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: isDark ? 0.22 : 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -446,8 +459,8 @@ class BookDetailScreen extends ConsumerWidget {
                         color: book.isCompleted
                             ? AppTheme.successColor
                             : (isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor),
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -458,8 +471,8 @@ class BookDetailScreen extends ConsumerWidget {
                           color: book.isCompleted
                               ? AppTheme.successColor
                               : (isDark
-                                  ? AppTheme.primaryLight
-                                  : AppTheme.primaryColor),
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor),
                         ),
                       ),
                     ],
@@ -490,10 +503,14 @@ class BookDetailScreen extends ConsumerWidget {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: book.isCompleted
-                          ? (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))
+                          ? (isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0))
                           : AppTheme.successColor,
                       foregroundColor: book.isCompleted
-                          ? (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+                          ? (isDark
+                                ? AppTheme.darkTextPrimary
+                                : AppTheme.textPrimary)
                           : Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -615,9 +632,7 @@ class BookDetailScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isDark
-                    ? AppTheme.darkTextPrimary
-                    : AppTheme.textPrimary,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -638,14 +653,14 @@ class BookDetailScreen extends ConsumerWidget {
               label: const Text('첫 기록 작성하기'),
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                side: BorderSide(
-                  color: isDark
-                      ? AppTheme.primaryLight
-                      : AppTheme.primaryColor,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                foregroundColor:
-                    isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                side: BorderSide(
+                  color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                ),
+                foregroundColor: isDark
+                    ? AppTheme.primaryLight
+                    : AppTheme.primaryColor,
               ),
             ),
           ],
@@ -654,47 +669,35 @@ class BookDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, WidgetRef ref, Book book) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title:
-            const Text('도서 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text(
-          '\'${book.title}\' 도서와 작성된 모든 독서 기록(${book.readPages}p)이 함께 삭제됩니다. 정말 삭제하시겠습니까?',
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-              await ref
-                  .read(bookControllerProvider.notifier)
-                  .deleteBook(book.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('도서가 삭제되었습니다.'),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirm(
+    BuildContext context,
+    WidgetRef ref,
+    Book book,
+  ) async {
+    final confirmed = await CustomConfirmDialog.show(
+      context,
+      title: '도서를 삭제하시겠습니까?',
+      highlightedTarget: book.title,
+      message: '이 책과 함께 작성된 모든 독서 기록(${book.readPages}p)이 영구히 삭제됩니다.',
+      confirmText: '도서 삭제',
+      isDestructive: true,
+      icon: Icons.delete_forever_rounded,
     );
+
+    if (confirmed == true && context.mounted) {
+      Navigator.pop(context);
+      await ref.read(bookControllerProvider.notifier).deleteBook(book.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('도서가 삭제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
   }
 }

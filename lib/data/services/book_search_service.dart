@@ -47,15 +47,13 @@ class BookSearchService {
       'https://dapi.kakao.com/v3/search/book?query=${Uri.encodeComponent(query)}&size=25',
     );
 
-    final response = await _client.get(
-      url,
-      headers: {
-        'Authorization': 'KakaoAK $_kakaoApiKey',
-      },
-    ).timeout(const Duration(seconds: 7));
+    final response = await _client
+        .get(url, headers: {'Authorization': 'KakaoAK $_kakaoApiKey'})
+        .timeout(const Duration(seconds: 7));
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       final documents = data['documents'] as List<dynamic>?;
       if (documents == null || documents.isEmpty) return [];
 
@@ -72,17 +70,19 @@ class BookSearchService {
       'https://www.googleapis.com/books/v1/volumes?q=${Uri.encodeComponent(query)}&maxResults=20&printType=books',
     );
 
-    final response =
-        await _client.get(url).timeout(const Duration(seconds: 8));
+    final response = await _client.get(url).timeout(const Duration(seconds: 8));
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       final items = data['items'] as List<dynamic>?;
       if (items == null || items.isEmpty) return [];
 
       return items
-          .map((item) =>
-              BookSearchResult.fromGoogleBooks(item as Map<String, dynamic>))
+          .map(
+            (item) =>
+                BookSearchResult.fromGoogleBooks(item as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];
@@ -94,17 +94,19 @@ class BookSearchService {
       'https://openlibrary.org/search.json?q=${Uri.encodeComponent(query)}&limit=20',
     );
 
-    final response =
-        await _client.get(url).timeout(const Duration(seconds: 8));
+    final response = await _client.get(url).timeout(const Duration(seconds: 8));
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       final docs = data['docs'] as List<dynamic>?;
       if (docs == null || docs.isEmpty) return [];
 
       return docs
-          .map((doc) =>
-              BookSearchResult.fromOpenLibrary(doc as Map<String, dynamic>))
+          .map(
+            (doc) =>
+                BookSearchResult.fromOpenLibrary(doc as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];

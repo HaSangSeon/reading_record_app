@@ -5,6 +5,8 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
 import '../controllers/note_controller.dart';
+import 'action_bottom_sheet.dart';
+import 'custom_confirm_dialog.dart';
 import 'note_form_dialog.dart';
 import 'shareable_quote_card_dialog.dart';
 
@@ -12,11 +14,7 @@ class NoteCard extends ConsumerWidget {
   final Book book;
   final Note note;
 
-  const NoteCard({
-    super.key,
-    required this.book,
-    required this.note,
-  });
+  const NoteCard({super.key, required this.book, required this.note});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,12 +46,15 @@ class NoteCard extends ConsumerWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: (isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor)
-                            .withValues(alpha: isDark ? 0.22 : 0.1),
+                        color:
+                            (isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor)
+                                .withValues(alpha: isDark ? 0.22 : 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -95,71 +96,38 @@ class NoteCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-                PopupMenuButton<String>(
+                IconButton(
                   padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                   icon: Icon(
                     Icons.more_vert_rounded,
                     size: 18,
                     color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
                   ),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  onSelected: (value) {
-                    if (value == 'share') {
-                      ShareableQuoteCardDialog.show(context, book: book, note: note);
-                    } else if (value == 'edit') {
-                      NoteFormDialog.show(context, book: book, note: note);
-                    } else if (value == 'delete') {
-                      _showDeleteConfirm(context, ref);
-                    }
+                  tooltip: '더보기',
+                  onPressed: () {
+                    ActionBottomSheet.showNoteActions(
+                      context,
+                      book: book,
+                      note: note,
+                      onShare: () {
+                        ShareableQuoteCardDialog.show(
+                          context,
+                          book: book,
+                          note: note,
+                        );
+                      },
+                      onEdit: () {
+                        NoteFormDialog.show(context, book: book, note: note);
+                      },
+                      onDelete: () {
+                        _showDeleteConfirm(context, ref);
+                      },
+                    );
                   },
-                  itemBuilder: (ctx) => [
-                    PopupMenuItem(
-                      value: 'share',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 16,
-                            color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('감성 카드 공유', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 16,
-                            color: isDark
-                                ? AppTheme.darkTextSecondary
-                                : AppTheme.textSecondary,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('기록 수정', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline_rounded,
-                              size: 16, color: Colors.redAccent),
-                          SizedBox(width: 8),
-                          Text('기록 삭제',
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.redAccent)),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -169,8 +137,10 @@ class NoteCard extends ConsumerWidget {
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF0F1626)
@@ -206,17 +176,21 @@ class NoteCard extends ConsumerWidget {
               ),
             ],
 
-            // 생각 / 메모 본문
-            const SizedBox(height: 12),
-            Text(
-              note.content,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
-                height: 1.5,
-                fontWeight: FontWeight.w400,
+            // 생각 / 메모 본문 (입력된 경우 표시)
+            if (note.content.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                note.content,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
-            ),
+            ],
 
             // 하단 감성 카드 공유 액션 바
             const SizedBox(height: 12),
@@ -224,13 +198,23 @@ class NoteCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 InkWell(
-                  onTap: () => ShareableQuoteCardDialog.show(context, book: book, note: note),
+                  onTap: () => ShareableQuoteCardDialog.show(
+                    context,
+                    book: book,
+                    note: note,
+                  ),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                          .withValues(alpha: isDark ? 0.15 : 0.08),
+                      color:
+                          (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: isDark ? 0.15 : 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -239,7 +223,9 @@ class NoteCard extends ConsumerWidget {
                         Icon(
                           Icons.auto_awesome_rounded,
                           size: 13,
-                          color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
                         ),
                         const SizedBox(width: 5),
                         Text(
@@ -247,7 +233,9 @@ class NoteCard extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
                           ),
                         ),
                       ],
@@ -262,36 +250,34 @@ class NoteCard extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('독서 기록 삭제',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('이 독서 기록을 삭제하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              await ref
-                  .read(noteControllerProvider.notifier)
-                  .deleteNote(note.id);
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirm(BuildContext context, WidgetRef ref) async {
+    final displayText = note.quotation.isNotEmpty
+        ? note.quotation
+        : (note.content.isNotEmpty ? note.content : '독서 기록');
+
+    final confirmed = await CustomConfirmDialog.show(
+      context,
+      title: '독서 기록을 삭제하시겠습니까?',
+      highlightedTarget: displayText,
+      message: '《${book.title}》에 남긴 이 독서 기록이 영구히 삭제됩니다.',
+      confirmText: '기록 삭제',
+      isDestructive: true,
+      icon: Icons.delete_forever_rounded,
     );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(noteControllerProvider.notifier).deleteNote(note.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('독서 기록이 삭제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
   }
 }

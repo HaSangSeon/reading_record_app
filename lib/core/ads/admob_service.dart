@@ -79,19 +79,20 @@ class AdMobService {
           debugPrint('[AdMobService] 전면 광고 로드 성공');
           _interstitialAd = ad;
           _isInterstitialAdLoading = false;
-          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _interstitialAd = null;
-              loadInterstitialAd(); // 닫힌 후 다음 광고 사전 로드
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('[AdMobService] 전면 광고 노출 실패: ${error.message}');
-              ad.dispose();
-              _interstitialAd = null;
-              loadInterstitialAd();
-            },
-          );
+          _interstitialAd!.fullScreenContentCallback =
+              FullScreenContentCallback(
+                onAdDismissedFullScreenContent: (ad) {
+                  ad.dispose();
+                  _interstitialAd = null;
+                  loadInterstitialAd(); // 닫힌 후 다음 광고 사전 로드
+                },
+                onAdFailedToShowFullScreenContent: (ad, error) {
+                  debugPrint('[AdMobService] 전면 광고 노출 실패: ${error.message}');
+                  ad.dispose();
+                  _interstitialAd = null;
+                  loadInterstitialAd();
+                },
+              );
           onLoaded?.call();
         },
         onAdFailedToLoad: (error) {
@@ -120,9 +121,11 @@ class AdMobService {
       _interstitialAd!.show();
     } else {
       debugPrint('[AdMobService] 전면 광고 캐시 없음 -> 로드 후 즉시 표시 시도');
-      loadInterstitialAd(onLoaded: () {
-        _interstitialAd?.show();
-      });
+      loadInterstitialAd(
+        onLoaded: () {
+          _interstitialAd?.show();
+        },
+      );
     }
   }
 }

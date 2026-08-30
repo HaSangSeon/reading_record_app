@@ -17,17 +17,21 @@ class StatsHeader extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF312E81), // Deep Indigo
-            Color(0xFF4338CA), // Royal Indigo
-            Color(0xFF4F46E5), // Vivid Indigo
+            Color(0xFF382B6E), // Deep Royal Violet
+            Color(0xFF4C3A93), // Royal Violet-Indigo
+            Color(0xFF5E49B4), // Vivid Violet
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFF818CF8).withValues(alpha: 0.25),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4338CA).withValues(alpha: 0.28),
+            color: const Color(0xFF4C3A93).withValues(alpha: 0.35),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -35,28 +39,55 @@ class StatsHeader extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // 은은한 서재 원형 앰비언트 글로우 데코레이션
+          // 1. 우측 상단 맑고 연한 라벤더-바이올렛 앰비언트 글로우 구체
           Positioned(
-            right: -20,
-            top: -20,
+            right: -25,
+            top: -25,
             child: Container(
-              width: 130,
-              height: 130,
+              width: 140,
+              height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(
+                      0xFFD8B4FE,
+                    ).withValues(alpha: 0.45), // 연한 파스텔 라벤더 코어
+                    const Color(0xFFA855F7).withValues(alpha: 0.22),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.1, 0.55, 1.0],
+                ),
               ),
             ),
           ),
+          // 2. 우측 상단 미니 하이라이트 원형 데코
           Positioned(
-            left: 40,
-            bottom: -30,
+            right: 22,
+            top: 14,
             child: Container(
-              width: 90,
-              height: 90,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF818CF8).withValues(alpha: 0.12),
+                color: const Color(0xFFE9D5FF).withValues(alpha: 0.22),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1.0,
+                ),
+              ),
+            ),
+          ),
+          // 3. 좌측 하단 보조 글로우 원
+          Positioned(
+            left: 30,
+            bottom: -35,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF818CF8).withValues(alpha: 0.15),
               ),
             ),
           ),
@@ -114,7 +145,10 @@ class StatsHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(14),
@@ -126,8 +160,11 @@ class StatsHeader extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.bookmark_added_rounded,
-                              color: Colors.white, size: 15),
+                          const Icon(
+                            Icons.bookmark_added_rounded,
+                            color: Colors.white,
+                            size: 15,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             '총 $totalBooks권',
@@ -144,7 +181,10 @@ class StatsHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(16),
@@ -156,9 +196,19 @@ class StatsHeader extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem('읽는 중', '$readingBooks권', Icons.local_fire_department_rounded, const Color(0xFFFBBF24)),
+                      _buildStatItem(
+                        '읽는 중',
+                        '$readingBooks권',
+                        Icons.local_fire_department_rounded,
+                        const Color(0xFFFBBF24),
+                      ),
                       _buildDivider(),
-                      _buildStatItem('완독 완료', '$completedBooks권', Icons.check_circle_rounded, const Color(0xFF34D399)),
+                      _buildStatItem(
+                        '완독 완료',
+                        '$completedBooks권',
+                        Icons.check_circle_rounded,
+                        const Color(0xFF34D399),
+                      ),
                       _buildDivider(),
                       _buildStatItem(
                         '완독률',
@@ -177,7 +227,12 @@ class StatsHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color iconColor) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Column(
       children: [
         Row(

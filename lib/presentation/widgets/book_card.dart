@@ -6,7 +6,9 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../controllers/book_controller.dart';
 import '../screens/book_detail_screen.dart';
+import 'action_bottom_sheet.dart';
 import 'book_form_dialog.dart';
+import 'custom_confirm_dialog.dart';
 
 class BookCard extends ConsumerWidget {
   final Book book;
@@ -23,21 +25,21 @@ class BookCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
-              ? [const Color(0xFF162032), const Color(0xFF101726)]
-              : [const Color(0xFFFFFFFF), const Color(0xFFF8FAFD)],
+              ? [const Color(0xFF191728), const Color(0xFF12101E)]
+              : [const Color(0xFFFFFFFF), const Color(0xFFFAF8FD)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? const Color(0xFF223048) : const Color(0xFFE8EDF5),
+          color: isDark ? const Color(0xFF2E2646) : const Color(0xFFE4DCF4),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.35)
-                : const Color(0xFF1E293B).withValues(alpha: 0.05),
+                ? Colors.black.withValues(alpha: 0.4)
+                : const Color(0xFF4C3A93).withValues(alpha: 0.06),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -46,7 +48,8 @@ class BookCard extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap ??
+          onTap:
+              onTap ??
               () {
                 Navigator.push(
                   context,
@@ -113,10 +116,15 @@ class BookCard extends ConsumerWidget {
                             if (book.memo.trim().isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3.5,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? const Color(0xFF0F172A).withValues(alpha: 0.6)
+                                      ? const Color(
+                                          0xFF0F172A,
+                                        ).withValues(alpha: 0.6)
                                       : const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
@@ -209,7 +217,9 @@ class BookCard extends ConsumerWidget {
               bottom: 0,
               width: 0.8,
               child: Container(
-                color: isDark ? const Color(0xFF223048) : const Color(0xFFE8EDF5),
+                color: isDark
+                    ? const Color(0xFF223048)
+                    : const Color(0xFFE8EDF5),
               ),
             ),
           ],
@@ -271,20 +281,28 @@ class BookCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.1),
+              color: const Color(
+                0xFFF59E0B,
+              ).withValues(alpha: isDark ? 0.18 : 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
+                const Icon(
+                  Icons.star_rounded,
+                  size: 14,
+                  color: Color(0xFFF59E0B),
+                ),
                 const SizedBox(width: 3),
                 Text(
                   book.rating.toStringAsFixed(1),
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppTheme.darkTextPrimary : const Color(0xFFB45309),
+                    color: isDark
+                        ? AppTheme.darkTextPrimary
+                        : const Color(0xFFB45309),
                   ),
                 ),
               ],
@@ -312,7 +330,10 @@ class BookCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 4.5,
+              ),
               decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: isDark ? 0.22 : 0.1),
                 borderRadius: BorderRadius.circular(16),
@@ -353,120 +374,62 @@ class BookCard extends ConsumerWidget {
   Widget _buildPopupMenu(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return PopupMenuButton<String>(
+    return IconButton(
       padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       icon: Icon(
         Icons.more_vert_rounded,
         size: 20,
         color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (value) async {
-        switch (value) {
-          case 'toggle_complete':
+      tooltip: '더보기',
+      onPressed: () {
+        ActionBottomSheet.showBookActions(
+          context,
+          book: book,
+          onToggleComplete: () async {
             await ref
                 .read(bookControllerProvider.notifier)
                 .toggleCompletion(book.id);
-            break;
-          case 'edit':
+          },
+          onEdit: () {
             BookFormDialog.show(context, book: book);
-            break;
-          case 'delete':
+          },
+          onDelete: () {
             _showDeleteConfirmDialog(context, ref);
-            break;
-        }
+          },
+        );
       },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'toggle_complete',
-          child: Row(
-            children: [
-              Icon(
-                book.isCompleted
-                    ? Icons.remove_circle_outline_rounded
-                    : Icons.check_circle_outline_rounded,
-                size: 18,
-                color: AppTheme.successColor,
-              ),
-              const SizedBox(width: 10),
-              Text(book.isCompleted ? '읽는 중으로 변경' : '완독으로 표시',
-                  style: const TextStyle(fontSize: 14)),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-              ),
-              const SizedBox(width: 10),
-              const Text('도서 정보 수정', style: TextStyle(fontSize: 14)),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline_rounded,
-                  size: 18, color: Colors.redAccent),
-              SizedBox(width: 10),
-              Text(
-                '도서 삭제',
-                style: TextStyle(fontSize: 14, color: Colors.redAccent),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
-  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title:
-            const Text('도서 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text(
-          '\'${book.title}\' 도서와 작성된 모든 독서 기록이 함께 삭제됩니다. 정말 삭제하시겠습니까?',
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref
-                  .read(bookControllerProvider.notifier)
-                  .deleteBook(book.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('도서가 삭제되었습니다.'),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirmDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await CustomConfirmDialog.show(
+      context,
+      title: '도서를 삭제하시겠습니까?',
+      highlightedTarget: book.title,
+      message: '이 책과 함께 등록된 모든 독서 기록과 발췌문이 영구히 삭제됩니다.',
+      confirmText: '도서 삭제',
+      isDestructive: true,
+      icon: Icons.delete_forever_rounded,
     );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(bookControllerProvider.notifier).deleteBook(book.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('도서가 삭제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
   }
 }

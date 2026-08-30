@@ -13,4 +13,5 @@ class AppConstants {
   static const String notificationEnabledKey = 'notification_enabled_key';
   static const String notificationHourKey = 'notification_hour_key';
   static const String notificationMinuteKey = 'notification_minute_key';
+  static const String notificationDaysKey = 'notification_days_key';
 }

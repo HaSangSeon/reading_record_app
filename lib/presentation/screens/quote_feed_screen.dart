@@ -8,6 +8,8 @@ import '../../data/models/note_model.dart';
 import '../../providers/repository_providers.dart';
 import '../controllers/note_controller.dart';
 import '../controllers/theme_controller.dart';
+import '../widgets/action_bottom_sheet.dart';
+import '../widgets/custom_confirm_dialog.dart';
 import '../widgets/note_form_dialog.dart';
 import '../widgets/shareable_quote_card_dialog.dart';
 import 'book_detail_screen.dart';
@@ -44,14 +46,19 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
     final selectedBookId = ref.watch(quoteFeedSelectedBookIdProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBackground : AppTheme.backgroundColor,
+      backgroundColor: isDark
+          ? AppTheme.darkBackground
+          : AppTheme.backgroundColor,
       appBar: AppBar(
+        flexibleSpace: AppTheme.buildAppBarFlexibleSpace(isDark),
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
                 style: TextStyle(
-                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
                   fontSize: 16,
                 ),
                 decoration: InputDecoration(
@@ -75,14 +82,19 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                          .withValues(alpha: 0.15),
+                      color:
+                          (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.format_quote_rounded,
                       size: 20,
-                      color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -90,10 +102,16 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                   const SizedBox(width: 8),
                   allNotesAsync.when(
                     data: (items) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                            .withValues(alpha: 0.15),
+                        color:
+                            (isDark
+                                    ? AppTheme.primaryLight
+                                    : AppTheme.primaryColor)
+                                .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -101,7 +119,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
                         ),
                       ),
                     ),
@@ -112,7 +132,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
               ),
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+            ),
             tooltip: _isSearching ? '검색 닫기' : '기록 검색',
             onPressed: () {
               setState(() {
@@ -128,14 +150,15 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
           ),
           IconButton(
             icon: Icon(
-              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
+              color: isDark ? Colors.amberAccent : AppTheme.textSecondary,
             ),
-            tooltip: isDark ? '라이트 모드' : '다크 모드',
+            tooltip: isDark ? '라이트 모드로 전환' : '다크 모드로 전환',
             onPressed: () {
               ref.read(themeControllerProvider.notifier).toggleTheme(context);
             },
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -153,35 +176,55 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                   itemCount: books.length + 1,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
-                    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+                    final primary = isDark
+                        ? AppTheme.primaryLight
+                        : AppTheme.primaryColor;
                     if (index == 0) {
                       final isSelected = selectedBookId == null;
                       return ChoiceChip(
                         label: const Text('전체 보기'),
                         selected: isSelected,
                         onSelected: (_) {
-                          ref.read(quoteFeedSelectedBookIdProvider.notifier).state = null;
+                          ref
+                                  .read(
+                                    quoteFeedSelectedBookIdProvider.notifier,
+                                  )
+                                  .state =
+                              null;
                         },
                         selectedColor: isDark
                             ? primary.withValues(alpha: 0.22)
                             : primary.withValues(alpha: 0.1),
                         labelStyle: TextStyle(
                           fontSize: 12.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           color: isSelected
                               ? primary
-                              : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
+                              : (isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary),
                         ),
-                        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+                        backgroundColor: isDark
+                            ? AppTheme.darkSurface
+                            : Colors.white,
                         side: BorderSide(
                           color: isSelected
                               ? primary
-                              : (isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0)),
+                              : (isDark
+                                    ? AppTheme.darkBorder
+                                    : const Color(0xFFE2E8F0)),
                           width: isSelected ? 1.4 : 0.8,
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         showCheckmark: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                       );
                     }
 
@@ -195,29 +238,45 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                       ),
                       selected: isSelected,
                       onSelected: (_) {
-                        ref.read(quoteFeedSelectedBookIdProvider.notifier).state =
-                            isSelected ? null : book.id;
+                        ref
+                            .read(quoteFeedSelectedBookIdProvider.notifier)
+                            .state = isSelected
+                            ? null
+                            : book.id;
                       },
                       selectedColor: isDark
                           ? primary.withValues(alpha: 0.22)
                           : primary.withValues(alpha: 0.1),
                       labelStyle: TextStyle(
                         fontSize: 12.5,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isSelected
                             ? primary
-                            : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
+                            : (isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary),
                       ),
-                      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+                      backgroundColor: isDark
+                          ? AppTheme.darkSurface
+                          : Colors.white,
                       side: BorderSide(
                         color: isSelected
                             ? primary
-                            : (isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0)),
+                            : (isDark
+                                  ? AppTheme.darkBorder
+                                  : const Color(0xFFE2E8F0)),
                         width: isSelected ? 1.4 : 0.8,
                       ),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       showCheckmark: false,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                     );
                   },
                 ),
@@ -245,14 +304,19 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    return _buildFeedCard(context, ref, item.book, item.note, isDark);
+                    return _buildFeedCard(
+                      context,
+                      ref,
+                      item.book,
+                      item.note,
+                      isDark,
+                    );
                   },
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(
-                child: Text('기록을 불러오는 중 오류가 발생했습니다: $err'),
-              ),
+              error: (err, _) =>
+                  Center(child: Text('기록을 불러오는 중 오류가 발생했습니다: $err')),
             ),
           ),
         ],
@@ -311,10 +375,15 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                     height: 50,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
-                      color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                          .withValues(alpha: 0.1),
+                      color:
+                          (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: 0.1),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -345,7 +414,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.3,
-                            color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                            color: isDark
+                                ? AppTheme.darkTextPrimary
+                                : AppTheme.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -370,7 +441,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                                 ' · ',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
+                                  color: isDark
+                                      ? AppTheme.darkTextLight
+                                      : AppTheme.textLight,
                                 ),
                               ),
                               Text(
@@ -392,63 +465,38 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 ),
 
                 // 작성 날짜 및 더보기 메뉴
-                PopupMenuButton<String>(
+                IconButton(
                   padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                   icon: Icon(
                     Icons.more_vert_rounded,
                     size: 18,
                     color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
                   ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  onSelected: (val) {
-                    if (val == 'share') {
-                      ShareableQuoteCardDialog.show(context, book: book, note: note);
-                    } else if (val == 'edit') {
-                      NoteFormDialog.show(context, book: book, note: note);
-                    } else if (val == 'delete') {
-                      _showDeleteDialog(context, ref, note);
-                    }
+                  tooltip: '더보기',
+                  onPressed: () {
+                    ActionBottomSheet.showNoteActions(
+                      context,
+                      book: book,
+                      note: note,
+                      onShare: () {
+                        ShareableQuoteCardDialog.show(
+                          context,
+                          book: book,
+                          note: note,
+                        );
+                      },
+                      onEdit: () {
+                        NoteFormDialog.show(context, book: book, note: note);
+                      },
+                      onDelete: () {
+                        _showDeleteDialog(context, ref, note);
+                      },
+                    );
                   },
-                  itemBuilder: (ctx) => [
-                    PopupMenuItem(
-                      value: 'share',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 16,
-                            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('감성 카드 공유', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 16,
-                            color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('기록 수정', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline_rounded, size: 16, color: Colors.redAccent),
-                          SizedBox(width: 8),
-                          Text('기록 삭제', style: TextStyle(fontSize: 13, color: Colors.redAccent)),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -460,11 +508,15 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF131822) : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? const Color(0xFF131822)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(12),
                   border: Border(
                     left: BorderSide(
-                      color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
                       width: 3.5,
                     ),
                   ),
@@ -475,7 +527,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                     Icon(
                       Icons.format_quote_rounded,
                       size: 18,
-                      color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -484,7 +538,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
-                          color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
                           height: 1.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -502,7 +558,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 note.content,
                 style: TextStyle(
                   fontSize: 14.5,
-                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
                   height: 1.55,
                 ),
               ),
@@ -522,13 +580,23 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                   ),
                 ),
                 InkWell(
-                  onTap: () => ShareableQuoteCardDialog.show(context, book: book, note: note),
+                  onTap: () => ShareableQuoteCardDialog.show(
+                    context,
+                    book: book,
+                    note: note,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                          .withValues(alpha: 0.1),
+                      color:
+                          (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -537,7 +605,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                         Icon(
                           Icons.auto_awesome_rounded,
                           size: 13,
-                          color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
                         ),
                         const SizedBox(width: 5),
                         Text(
@@ -545,7 +615,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
                           ),
                         ),
                       ],
@@ -621,7 +693,9 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
               style: TextStyle(
                 fontSize: 13.5,
                 height: 1.5,
-                color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
               ),
             ),
           ],
@@ -630,33 +704,38 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, WidgetRef ref, Note note) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('독서 기록 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('이 독서 기록을 삭제하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              await ref.read(noteControllerProvider.notifier).deleteNote(note.id);
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Note note,
+  ) async {
+    final displayText = note.quotation.isNotEmpty
+        ? note.quotation
+        : (note.content.isNotEmpty ? note.content : '독서 기록');
+
+    final confirmed = await CustomConfirmDialog.show(
+      context,
+      title: '독서 기록을 삭제하시겠습니까?',
+      highlightedTarget: displayText,
+      message: '이 독서 기록과 발췌문이 피드 및 서재에서 영구히 삭제됩니다.',
+      confirmText: '기록 삭제',
+      isDestructive: true,
+      icon: Icons.delete_forever_rounded,
     );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(noteControllerProvider.notifier).deleteNote(note.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('독서 기록이 삭제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
 import '../../providers/repository_providers.dart';
+import '../controllers/theme_controller.dart';
 import 'book_detail_screen.dart';
 
 class StatsDashboardScreen extends ConsumerWidget {
@@ -18,6 +19,7 @@ class StatsDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: AppTheme.buildAppBarFlexibleSpace(isDark),
         title: Row(
           children: [
             Icon(
@@ -29,21 +31,52 @@ class StatsDashboardScreen extends ConsumerWidget {
             const Text('독서 통계 & 리포트'),
           ],
         ),
-      ),
-      body: booksAsync.when(
-        data: (books) {
-          return notesAsync.when(
-            data: (notes) => _buildDashboardBody(context, books, notes),
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
+              color: isDark ? Colors.amberAccent : AppTheme.textSecondary,
             ),
-            error: (err, _) => Center(child: Text('노트 통계 오류: $err')),
-          );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            tooltip: isDark ? '라이트 모드로 전환' : '다크 모드로 전환',
+            onPressed: () =>
+                ref.read(themeControllerProvider.notifier).toggleTheme(context),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [
+                    const Color(0xFF0C0E17),
+                    const Color(0xFF131726),
+                    const Color(0xFF0C0E17),
+                  ]
+                : [
+                    const Color(0xFFF7F5FC),
+                    const Color(0xFFF1EDF8),
+                    const Color(0xFFF6F4FA),
+                  ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-        error: (err, _) => Center(child: Text('도서 통계 오류: $err')),
+        child: booksAsync.when(
+          data: (books) {
+            return notesAsync.when(
+              data: (notes) => _buildDashboardBody(context, books, notes),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              ),
+              error: (err, _) => Center(child: Text('노트 통계 오류: $err')),
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryColor),
+          ),
+          error: (err, _) => Center(child: Text('도서 통계 오류: $err')),
+        ),
       ),
     );
   }
@@ -74,8 +107,9 @@ class StatsDashboardScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color:
-                      isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -98,8 +132,9 @@ class StatsDashboardScreen extends ConsumerWidget {
     final totalBooks = books.length;
     final completedBooks = books.where((b) => b.isCompleted).length;
     final readingBooks = totalBooks - completedBooks;
-    final completionRate =
-        totalBooks > 0 ? ((completedBooks / totalBooks) * 100).toInt() : 0;
+    final completionRate = totalBooks > 0
+        ? ((completedBooks / totalBooks) * 100).toInt()
+        : 0;
     final totalPages = books.fold<int>(0, (sum, b) => sum + b.readPages);
     final totalNotes = notes.length;
 
@@ -107,7 +142,7 @@ class StatsDashboardScreen extends ConsumerWidget {
     final ratedBooks = books.where((b) => b.rating > 0).toList();
     final avgRating = ratedBooks.isNotEmpty
         ? ratedBooks.fold<double>(0, (sum, b) => sum + b.rating) /
-            ratedBooks.length
+              ratedBooks.length
         : 0.0;
 
     return SingleChildScrollView(
@@ -161,96 +196,149 @@ class StatsDashboardScreen extends ConsumerWidget {
     required double avgRating,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF312E81), // Deep Indigo
-            Color(0xFF4338CA), // Royal Indigo
-            Color(0xFF4F46E5), // Indigo 600
+            Color(0xFF382B6E), // Deep Royal Violet
+            Color(0xFF4C3A93), // Royal Violet-Indigo
+            Color(0xFF5E49B4), // Vivid Violet
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFF818CF8).withValues(alpha: 0.25),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4338CA).withValues(alpha: 0.3),
-            blurRadius: 16,
+            color: const Color(0xFF4C3A93).withValues(alpha: 0.35),
+            blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.insights_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                '나의 누적 독서 인사이트',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
+          // 1. 우측 상단 맑고 연한 라벤더-바이올렛 앰비언트 글로우 구체
+          Positioned(
+            right: -25,
+            top: -25,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFD8B4FE).withValues(alpha: 0.45),
+                    const Color(0xFFA855F7).withValues(alpha: 0.22),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.1, 0.55, 1.0],
                 ),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              _buildStatMetric(
-                label: '총 등록 도서',
-                value: '$totalBooks 권',
-                icon: Icons.menu_book_rounded,
+          // 2. 우측 상단 미니 하이라이트 원형 데코
+          Positioned(
+            right: 22,
+            top: 14,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFE9D5FF).withValues(alpha: 0.22),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1.0,
+                ),
               ),
-              _buildStatDivider(),
-              _buildStatMetric(
-                label: '완독한 도서',
-                value: '$completedBooks 권',
-                icon: Icons.check_circle_rounded,
-              ),
-              _buildStatDivider(),
-              _buildStatMetric(
-                label: '완독률',
-                value: '$completionRate %',
-                icon: Icons.task_alt_rounded,
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 14),
-          Divider(color: Colors.white.withValues(alpha: 0.15), height: 1),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _buildStatMetric(
-                label: '작성한 독서 노트',
-                value: '$totalNotes 개',
-                icon: Icons.edit_note_rounded,
-              ),
-              _buildStatDivider(),
-              _buildStatMetric(
-                label: '평균 별점',
-                value: avgRating > 0 ? '★ ${avgRating.toStringAsFixed(1)}' : '-',
-                icon: Icons.star_rounded,
-              ),
-              _buildStatDivider(),
-              _buildStatMetric(
-                label: '현재 읽는 중',
-                value: '$readingBooks 권',
-                icon: Icons.local_fire_department_rounded,
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.insights_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '나의 누적 독서 인사이트',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    _buildStatMetric(
+                      label: '총 등록 도서',
+                      value: '$totalBooks 권',
+                      icon: Icons.menu_book_rounded,
+                    ),
+                    _buildStatDivider(),
+                    _buildStatMetric(
+                      label: '완독한 도서',
+                      value: '$completedBooks 권',
+                      icon: Icons.check_circle_rounded,
+                    ),
+                    _buildStatDivider(),
+                    _buildStatMetric(
+                      label: '완독률',
+                      value: '$completionRate %',
+                      icon: Icons.task_alt_rounded,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Divider(color: Colors.white.withValues(alpha: 0.15), height: 1),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildStatMetric(
+                      label: '작성한 독서 노트',
+                      value: '$totalNotes 개',
+                      icon: Icons.edit_note_rounded,
+                    ),
+                    _buildStatDivider(),
+                    _buildStatMetric(
+                      label: '평균 별점',
+                      value: avgRating > 0
+                          ? '★ ${avgRating.toStringAsFixed(1)}'
+                          : '-',
+                      icon: Icons.star_rounded,
+                    ),
+                    _buildStatDivider(),
+                    _buildStatMetric(
+                      label: '현재 읽는 중',
+                      value: '$readingBooks 권',
+                      icon: Icons.local_fire_department_rounded,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -291,11 +379,7 @@ class StatsDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildStatDivider() {
-    return Container(
-      height: 36,
-      width: 1,
-      color: Colors.white24,
-    );
+    return Container(height: 36, width: 1, color: Colors.white24);
   }
 
   Widget _buildCompletionStatusCard({
@@ -438,8 +522,9 @@ class StatsDashboardScreen extends ConsumerWidget {
       }).length;
     }).toList();
 
-    final maxCount =
-        counts.fold<int>(1, (max, c) => c > max ? c : max).clamp(1, 999);
+    final maxCount = counts
+        .fold<int>(1, (max, c) => c > max ? c : max)
+        .clamp(1, 999);
 
     return Card(
       color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
@@ -458,8 +543,7 @@ class StatsDashboardScreen extends ConsumerWidget {
               children: [
                 Icon(
                   Icons.calendar_month_rounded,
-                  color:
-                      isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                  color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -537,11 +621,11 @@ class StatsDashboardScreen extends ConsumerWidget {
                                 : FontWeight.normal,
                             color: index == 5
                                 ? (isDark
-                                    ? AppTheme.primaryLight
-                                    : AppTheme.primaryColor)
+                                      ? AppTheme.primaryLight
+                                      : AppTheme.primaryColor)
                                 : (isDark
-                                    ? AppTheme.darkTextSecondary
-                                    : AppTheme.textSecondary),
+                                      ? AppTheme.darkTextSecondary
+                                      : AppTheme.textSecondary),
                           ),
                         ),
                       ],
@@ -580,8 +664,11 @@ class StatsDashboardScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.favorite_rounded,
-                    color: Colors.redAccent, size: 20),
+                const Icon(
+                  Icons.favorite_rounded,
+                  color: Colors.redAccent,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   '인생 도서 & 높은 평점 🏆',
@@ -611,22 +698,24 @@ class StatsDashboardScreen extends ConsumerWidget {
                   width: 40,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: (isDark
-                            ? AppTheme.primaryLight
-                            : AppTheme.primaryColor)
-                        .withValues(alpha: 0.1),
+                    color:
+                        (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                            .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                      ? Image.network(book.coverUrl!, fit: BoxFit.cover,
+                      ? Image.network(
+                          book.coverUrl!,
+                          fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Icon(
-                                Icons.menu_book_rounded,
-                                size: 20,
-                                color: isDark
-                                    ? AppTheme.primaryLight
-                                    : AppTheme.primaryColor,
-                              ))
+                            Icons.menu_book_rounded,
+                            size: 20,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
+                          ),
+                        )
                       : Icon(
                           Icons.menu_book_rounded,
                           size: 20,
@@ -660,8 +749,11 @@ class StatsDashboardScreen extends ConsumerWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded,
-                        color: AppTheme.accentColor, size: 18),
+                    const Icon(
+                      Icons.star_rounded,
+                      color: AppTheme.accentColor,
+                      size: 18,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       book.rating.toStringAsFixed(1),

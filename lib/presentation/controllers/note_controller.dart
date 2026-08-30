@@ -7,8 +7,10 @@ import '../../domain/repositories/note_repository.dart';
 import '../../providers/repository_providers.dart';
 
 /// 특정 도서(bookId)의 상세 실시간 데이터 프로바이더
-final singleBookStreamProvider =
-    StreamProvider.family<Book?, String>((ref, bookId) {
+final singleBookStreamProvider = StreamProvider.family<Book?, String>((
+  ref,
+  bookId,
+) {
   final allBooksAsync = ref.watch(allBooksStreamProvider);
   return allBooksAsync.when(
     data: (books) {
@@ -23,12 +25,15 @@ final singleBookStreamProvider =
 /// 독서 노트 정렬 기준 (페이지순 / 최신 작성순)
 enum NoteSortOrder { byPage, byDate }
 
-final noteSortOrderProvider =
-    StateProvider.family<NoteSortOrder, String>((ref, bookId) => NoteSortOrder.byPage);
+final noteSortOrderProvider = StateProvider.family<NoteSortOrder, String>(
+  (ref, bookId) => NoteSortOrder.byPage,
+);
 
 /// 정렬이 적용된 특정 도서의 독서 노트 목록 프로바이더
-final sortedNotesProvider =
-    Provider.family<AsyncValue<List<Note>>, String>((ref, bookId) {
+final sortedNotesProvider = Provider.family<AsyncValue<List<Note>>, String>((
+  ref,
+  bookId,
+) {
   final notesAsync = ref.watch(notesByBookStreamProvider(bookId));
   final sortOrder = ref.watch(noteSortOrderProvider(bookId));
 
@@ -52,14 +57,13 @@ class NoteWithBook {
   final Note note;
   final Book book;
 
-  const NoteWithBook({
-    required this.note,
-    required this.book,
-  });
+  const NoteWithBook({required this.note, required this.book});
 }
 
 /// 모든 도서의 노트를 도서 정보와 결합하여 최신 작성순으로 제공하는 프로바이더
-final allNotesWithBookProvider = Provider<AsyncValue<List<NoteWithBook>>>((ref) {
+final allNotesWithBookProvider = Provider<AsyncValue<List<NoteWithBook>>>((
+  ref,
+) {
   final notesAsync = ref.watch(allNotesStreamProvider);
   final booksAsync = ref.watch(allBooksStreamProvider);
 
@@ -98,7 +102,9 @@ final quoteFeedSearchQueryProvider = StateProvider<String>((ref) => '');
 final quoteFeedSelectedBookIdProvider = StateProvider<String?>((ref) => null);
 
 /// 검색 및 도서 필터가 적용된 한줄 피드 목록 프로바이더
-final filteredQuoteFeedProvider = Provider<AsyncValue<List<NoteWithBook>>>((ref) {
+final filteredQuoteFeedProvider = Provider<AsyncValue<List<NoteWithBook>>>((
+  ref,
+) {
   final allNotesWithBookAsync = ref.watch(allNotesWithBookProvider);
   final query = ref.watch(quoteFeedSearchQueryProvider).trim().toLowerCase();
   final selectedBookId = ref.watch(quoteFeedSelectedBookIdProvider);
@@ -125,10 +131,10 @@ final filteredQuoteFeedProvider = Provider<AsyncValue<List<NoteWithBook>>>((ref)
 /// 독서 노트 CRUD 컨트롤러
 final noteControllerProvider =
     StateNotifierProvider<NoteController, AsyncValue<void>>((ref) {
-  final noteRepo = ref.watch(noteRepositoryProvider);
-  final bookRepo = ref.watch(bookRepositoryProvider);
-  return NoteController(noteRepo, bookRepo);
-});
+      final noteRepo = ref.watch(noteRepositoryProvider);
+      final bookRepo = ref.watch(bookRepositoryProvider);
+      return NoteController(noteRepo, bookRepo);
+    });
 
 class NoteController extends StateNotifier<AsyncValue<void>> {
   final NoteRepository _noteRepository;
@@ -136,7 +142,7 @@ class NoteController extends StateNotifier<AsyncValue<void>> {
   final Uuid _uuid = const Uuid();
 
   NoteController(this._noteRepository, this._bookRepository)
-      : super(const AsyncValue.data(null));
+    : super(const AsyncValue.data(null));
 
   /// 새 독서 노트 추가
   Future<bool> addNote({
