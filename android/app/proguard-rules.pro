@@ -40,3 +40,13 @@
 -keepattributes Exceptions
 -keepattributes InnerClasses
 -keepattributes EnclosingMethod
+
+# Google ML Kit Text Recognition
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.vision.text.**
+-dontwarn com.google.mlkit.**
+-dontwarn com.google_mlkit_text_recognition.**
+
+# uCrop
+-keep class com.yalantis.ucrop.** { *; }
+-dontwarn com.yalantis.ucrop.**
