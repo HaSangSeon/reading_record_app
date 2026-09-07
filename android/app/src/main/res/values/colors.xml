@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0F172A</color>
+
+    <!-- UCrop Dark Studio Theme -->
+    <color name="ucrop_color_toolbar">#111318</color>
+    <color name="ucrop_color_statusbar">#111318</color>
+    <color name="ucrop_color_toolbar_widget">#FFFFFF</color>
+    <color name="ucrop_color_crop_background">#0A0B0E</color>
+    <color name="ucrop_color_widget_background">#111318</color>
+    <color name="ucrop_color_active_controls_color">#818CF8</color>
+    <color name="ucrop_color_active_aspect_ratio">#818CF8</color>
+    <color name="ucrop_color_inactive_aspect_ratio">#94A3B8</color>
+    <color name="ucrop_color_inactive_controls_color">#64748B</color>
+    <color name="ucrop_color_widget_active">#818CF8</color>
+    <color name="ucrop_color_widget_text">#818CF8</color>
+    <color name="ucrop_color_default_crop_frame">#818CF8</color>
+    <color name="ucrop_color_default_crop_grid">#40818CF8</color>
+    <color name="ucrop_color_default_dimmed">#B3000000</color>
 </resources>

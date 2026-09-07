@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -258,8 +259,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         ),
       );
 
-      // 도서 등록/수정 완료 시 3회에 1회 전면 광고 노출
-      AdMobService().triggerActionInterstitial(interval: 3);
+      // 도서 등록/수정 완료 시 통합 액션 카운터 증가 (기본 4회 완료 시 1회 노출, 3분 쿨타임)
+      AdMobService().triggerActionInterstitial();
     }
   }
 
@@ -470,7 +471,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
           Flexible(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
-                bottom: mediaQuery.viewInsets.bottom + 24,
+                bottom: mediaQuery.viewInsets.bottom +
+                    math.max(mediaQuery.viewPadding.bottom, 24.0),
                 left: 20,
                 right: 20,
                 top: 18,

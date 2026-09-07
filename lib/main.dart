@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/ads/admob_service.dart';
 import 'core/database/hive_service.dart';
@@ -11,12 +12,19 @@ void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 세로 모드로 화면 방향 고정
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
   // 100% 로컬 Hive 데이터베이스 초기화 및 Box 오픈
   final hiveService = HiveService();
   await hiveService.init();
 
-  // 로컬 푸시 알림 서비스 초기화
-  await NotificationService().init();
+  // 로컬 푸시 알림 서비스 초기화 및 활성 알림 스케줄 복구
+  final notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.rescheduleIfEnabled();
 
   // Google AdMob 초기화
   await AdMobService().init();

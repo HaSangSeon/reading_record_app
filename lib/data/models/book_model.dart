@@ -122,8 +122,8 @@ class Book extends HiveObject {
       author: map['author'] as String,
       publisher: map['publisher'] as String? ?? '',
       coverUrl: map['coverUrl'] as String?,
-      totalPages: map['totalPages'] as int? ?? 0,
-      readPages: map['readPages'] as int? ?? 0,
+      totalPages: (map['totalPages'] as num?)?.toInt() ?? 0,
+      readPages: (map['readPages'] as num?)?.toInt() ?? 0,
       isCompleted: map['isCompleted'] as bool? ?? false,
       createdAt: DateTime.parse(map['createdAt'] as String),
       completedAt: map['completedAt'] != null

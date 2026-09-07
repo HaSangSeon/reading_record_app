@@ -74,15 +74,37 @@ class BackupService {
   Future<({bool success, int books, int notes, String? error})>
   pickAndImportBackupFile({bool overwrite = false}) async {
     try {
-      final files = await FilePicker.pickFiles(type: FileType.any);
+      // 1. JSON 파일 우선 필터링 선택 (실패 시 any로 폴백)
+      List<PlatformFile> files = [];
+      try {
+        files = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+      } catch (_) {
+        files = await FilePicker.pickFiles(type: FileType.any);
+      }
 
-      if (files.isEmpty || files.first.path == null) {
+      if (files.isEmpty) {
         return (success: false, books: 0, notes: 0, error: '선택된 파일이 없습니다.');
       }
 
-      final file = File(files.first.path!);
-      final content = await file.readAsString(encoding: utf8);
+      final file = files.first;
+      String content;
 
+      // 2. 로컬 경로 직접 읽기 또는 클라우드(Google Drive, SAF) 바이트 디코딩 지원
+      if (file.path != null && file.path!.isNotEmpty) {
+        content = await File(file.path!).readAsString(encoding: utf8);
+      } else {
+        final bytes = await file.readAsBytes();
+        content = utf8.decode(bytes);
+      }
+
+      if (content.trim().isEmpty) {
+        return (success: false, books: 0, notes: 0, error: '백업 파일의 내용이 비어있습니다.');
+      }
+
+      // 3. JSON 파싱 및 데이터베이스 복원
       final restored = await importFromJson(content, overwrite: overwrite);
       return (
         success: true,
@@ -115,7 +137,7 @@ class BackupService {
       throw const FormatException('올바른 JSON 형식의 백업 데이터가 아닙니다.');
     }
 
-    if (decoded is! Map<String, dynamic> ||
+    if (decoded is! Map ||
         decoded['books'] is! List ||
         decoded['notes'] is! List) {
       throw const FormatException('독서한줄 앱의 유효한 백업 데이터 구조가 아닙니다.');
@@ -132,19 +154,29 @@ class BackupService {
 
     int booksCount = 0;
     for (final rawBook in booksList) {
-      if (rawBook is Map<String, dynamic>) {
-        final book = Book.fromMap(rawBook);
-        await _hiveService.bookBox.put(book.id, book);
-        booksCount++;
+      if (rawBook is Map) {
+        try {
+          final bookMap = Map<String, dynamic>.from(rawBook);
+          final book = Book.fromMap(bookMap);
+          await _hiveService.bookBox.put(book.id, book);
+          booksCount++;
+        } catch (e) {
+          // 특정 도서 변환 실패 시 전체 복원을 중단하지 않고 로그 남김
+        }
       }
     }
 
     int notesCount = 0;
     for (final rawNote in notesList) {
-      if (rawNote is Map<String, dynamic>) {
-        final note = Note.fromMap(rawNote);
-        await _hiveService.noteBox.put(note.id, note);
-        notesCount++;
+      if (rawNote is Map) {
+        try {
+          final noteMap = Map<String, dynamic>.from(rawNote);
+          final note = Note.fromMap(noteMap);
+          await _hiveService.noteBox.put(note.id, note);
+          notesCount++;
+        } catch (e) {
+          // 특정 노트 변환 실패 시 전체 복원을 중단하지 않고 로그 남김
+        }
       }
     }
 

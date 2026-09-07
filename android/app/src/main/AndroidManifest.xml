@@ -2,6 +2,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:label="독서한줄"
@@ -11,6 +12,10 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3702899361747571~2778107463"/>
+        <!-- Google ML Kit OCR Model Dependency -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -19,7 +24,8 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="portrait">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
@@ -33,6 +39,25 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/CustomUCropTheme"/>
+        <!-- flutter_local_notifications: 예약 알림 수신 및 기기 재부팅 시 알람 자동 복원 리시버 -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="true"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

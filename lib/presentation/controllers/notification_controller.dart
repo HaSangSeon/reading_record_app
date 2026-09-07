@@ -150,24 +150,42 @@ class NotificationController extends StateNotifier<NotificationSettingsState> {
     }
   }
 
-  /// 특정 요일 토글 (1=월~7=일)
-  Future<void> toggleDay(
+  /// 특정 요일 토글 (1=월~7=일). 최소 1개 요일 유지 실패 시 false 반환.
+  Future<bool> toggleDay(
     int day, {
     List<Book>? books,
     List<Note>? notes,
   }) async {
     final currentDays = List<int>.from(state.selectedDays);
     if (currentDays.contains(day)) {
-      // 최소 1개 요일은 유지하도록 처리
-      if (currentDays.length > 1) {
-        currentDays.remove(day);
+      // 최소 1개 요일은 유지하도록 방어
+      if (currentDays.length <= 1) {
+        return false;
       }
+      currentDays.remove(day);
     } else {
       currentDays.add(day);
     }
     currentDays.sort();
 
     await setDays(currentDays, books: books, notes: notes);
+    return true;
+  }
+
+  /// 외부(도서 상태 변경 등)에서 알림 문구 즉시 동기화
+  Future<void> refreshReminder({
+    List<Book>? books,
+    List<Note>? notes,
+  }) async {
+    if (state.isEnabled) {
+      await _notificationService.scheduleReminder(
+        hour: state.time.hour,
+        minute: state.time.minute,
+        days: state.selectedDays,
+        books: books,
+        notes: notes,
+      );
+    }
   }
 
   /// 요일 일괄 변경

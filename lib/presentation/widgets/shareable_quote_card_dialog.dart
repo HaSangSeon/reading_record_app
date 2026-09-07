@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/ads/admob_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
@@ -86,6 +87,11 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
   bool _isSharing = false;
   int _selectedThemeIndex = 0;
   int _selectedFontIndex = 0;
+  bool _includeMemo = true; // 구절만 vs 구절+메모 토글 상태
+
+  bool get _hasQuotation => widget.note.quotation.trim().isNotEmpty;
+  bool get _hasMemo => widget.note.content.trim().isNotEmpty;
+  bool get _canToggleMemo => _hasQuotation && _hasMemo;
 
   // 8가지 프리미엄 감성 한글 서체 프리셋
   final List<QuoteCardFont> _fonts = [
@@ -217,6 +223,9 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
   }
 
   String? get _displaySubMemo {
+    if (_canToggleMemo && !_includeMemo) {
+      return null;
+    }
     if (widget.note.quotation.trim().isNotEmpty &&
         widget.note.content.trim().isNotEmpty) {
       return widget.note.content.trim();
@@ -249,7 +258,15 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
           'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
 
       final shareText = StringBuffer()
-        ..writeln('“$_displayMainText”')
+        ..writeln('“$_displayMainText”');
+
+      if (_displaySubMemo != null) {
+        shareText
+          ..writeln()
+          ..writeln('💭 나의 생각: $_displaySubMemo');
+      }
+
+      shareText
         ..writeln('- 《${widget.book.title}》 (${widget.book.author})')
         ..writeln()
         ..writeln('✨ 나만의 인생 문장을 기록하고 감성 카드로 공유해보세요.')
@@ -262,6 +279,9 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
           text: shareText.toString(),
         ),
       );
+
+      // 소셜 카드 공유 완료 시 통합 액션 카운터 증가 (기본 4회 완료 시 1회 노출, 3분 쿨타임)
+      AdMobService().triggerActionInterstitial();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -287,8 +307,11 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
     final currentTheme = _themes[_selectedThemeIndex];
     final currentFont = _fonts[_selectedFontIndex];
 
-    // 손글씨나 특수 서체의 경우 가독성을 위해 폰트 크기 미세 조정
-    final double mainFontSize = currentFont.name == '나눔손글씨' ? 21.0 : 16.5;
+    final isQuoteOnly = _displaySubMemo == null;
+    // 구절만 있을 때는 명문장 느낌을 살려 글씨 크기를 키우고, 메모가 있을 때는 균형감 있게 배치
+    final double mainFontSize = currentFont.name == '나눔손글씨'
+        ? (isQuoteOnly ? 23.0 : 19.5)
+        : (isQuoteOnly ? 18.0 : 16.0);
     final double subFontSize = currentFont.name == '나눔손글씨' ? 15.0 : 12.5;
 
     return Container(
@@ -528,19 +551,41 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                                           style: currentFont.fontBuilder(
                                             color: currentTheme.textColor,
                                             fontSize: mainFontSize,
-                                            height: 1.65,
+                                            height: isQuoteOnly ? 1.75 : 1.6,
                                             fontWeight: FontWeight.w700,
                                             letterSpacing: -0.3,
                                           ),
                                         ),
                                         if (_displaySubMemo != null) ...[
-                                          const SizedBox(height: 12),
+                                          const SizedBox(height: 14),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                width: 14,
+                                                height: 1.2,
+                                                color: currentTheme.subTextColor
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '생각 메모',
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: 0.3,
+                                                  color: currentTheme.subTextColor
+                                                      .withValues(alpha: 0.8),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
                                           Text(
                                             _displaySubMemo!,
                                             style: currentFont.fontBuilder(
                                               color: currentTheme.subTextColor,
                                               fontSize: subFontSize,
-                                              height: 1.5,
+                                              height: 1.55,
                                               fontWeight: FontWeight.normal,
                                             ),
                                           ),
@@ -570,15 +615,16 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                                           children: [
                                             Text(
                                               book.title,
-                                              maxLines: 1,
+                                              maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
                                                 color: currentTheme.textColor,
-                                                fontSize: 13.5,
+                                                fontSize: 13,
                                                 fontWeight: FontWeight.w700,
+                                                height: 1.25,
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
+                                            const SizedBox(height: 3),
                                             Text(
                                               '${book.author}${note.pageNumber > 0 ? ' · p.${note.pageNumber}' : ''}',
                                               maxLines: 1,
@@ -592,53 +638,16 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                                           ],
                                         ),
                                       ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 7,
-                                              vertical: 2.5,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: currentTheme.quoteBadgeBg,
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.shop_two_outlined,
-                                                  size: 10,
-                                                  color:
-                                                      currentTheme.subTextColor,
-                                                ),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                  'Google Play 독서한줄',
-                                                  style: TextStyle(
-                                                    color: currentTheme
-                                                        .subTextColor,
-                                                    fontSize: 9.5,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: -0.2,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            dateStr,
-                                            style: TextStyle(
-                                              color: currentTheme.subTextColor,
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
+                                      const SizedBox(width: 14),
+                                      Text(
+                                        dateStr,
+                                        style: TextStyle(
+                                          color: currentTheme.subTextColor
+                                              .withValues(alpha: 0.8),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.2,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -651,7 +660,161 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
+
+                  // 0) 카드 포함 내용 선택 토글 (구절과 메모가 둘 다 작성된 경우에만 스마트 노출)
+                  if (_canToggleMemo) ...[
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E2633)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF2B384D)
+                              : const Color(0xFFE2E8F0),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // 1. 구절만 공유
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                if (_includeMemo) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _includeMemo = false);
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: !_includeMemo
+                                      ? (isDark
+                                          ? AppTheme.primaryLight
+                                          : AppTheme.primaryColor)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: !_includeMemo
+                                      ? [
+                                          BoxShadow(
+                                            color: (isDark
+                                                    ? AppTheme.primaryLight
+                                                    : AppTheme.primaryColor)
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.format_quote_rounded,
+                                      size: 16,
+                                      color: !_includeMemo
+                                          ? Colors.white
+                                          : (isDark
+                                              ? AppTheme.darkTextSecondary
+                                              : AppTheme.textSecondary),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '구절 공유',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: !_includeMemo
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: !_includeMemo
+                                            ? Colors.white
+                                            : (isDark
+                                                ? AppTheme.darkTextPrimary
+                                                : AppTheme.textPrimary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // 2. 구절+메모 공유
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                if (!_includeMemo) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _includeMemo = true);
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: _includeMemo
+                                      ? (isDark
+                                          ? AppTheme.primaryLight
+                                          : AppTheme.primaryColor)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: _includeMemo
+                                      ? [
+                                          BoxShadow(
+                                            color: (isDark
+                                                    ? AppTheme.primaryLight
+                                                    : AppTheme.primaryColor)
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.notes_rounded,
+                                      size: 16,
+                                      color: _includeMemo
+                                          ? Colors.white
+                                          : (isDark
+                                              ? AppTheme.darkTextSecondary
+                                              : AppTheme.textSecondary),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '구절+메모 공유',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: _includeMemo
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: _includeMemo
+                                            ? Colors.white
+                                            : (isDark
+                                                ? AppTheme.darkTextPrimary
+                                                : AppTheme.textPrimary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
 
                   // 1) 서체 스타일 선택 세그먼트 (8가지 다채로운 감성 폰트)
                   Row(
@@ -881,11 +1044,20 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                           onPressed: () async {
                             const playStoreUrl =
                                 'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
+                            final copyBuffer = StringBuffer()
+                              ..writeln('“$_displayMainText”');
+                            if (_displaySubMemo != null) {
+                              copyBuffer
+                                ..writeln()
+                                ..writeln('💭 나의 생각: $_displaySubMemo');
+                            }
+                            copyBuffer
+                              ..writeln('- 《${book.title}》 (${book.author})')
+                              ..writeln()
+                              ..write('📱 독서한줄 앱 다운로드: $playStoreUrl');
+
                             await Clipboard.setData(
-                              ClipboardData(
-                                text:
-                                    '“$_displayMainText”\n- 《${book.title}》 (${book.author})\n\n📱 독서한줄 앱 다운로드: $playStoreUrl',
-                              ),
+                              ClipboardData(text: copyBuffer.toString()),
                             );
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(

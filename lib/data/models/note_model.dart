@@ -75,7 +75,7 @@ class Note extends HiveObject {
     return Note(
       id: map['id'] as String,
       bookId: map['bookId'] as String,
-      pageNumber: map['pageNumber'] as int? ?? 0,
+      pageNumber: (map['pageNumber'] as num?)?.toInt() ?? 0,
       content: map['content'] as String,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: map['updatedAt'] != null

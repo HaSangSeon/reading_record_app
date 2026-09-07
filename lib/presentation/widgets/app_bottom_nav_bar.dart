@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
@@ -21,49 +22,58 @@ class AppBottomNavBar extends ConsumerWidget {
         ? const Color(0xFF94A3B8)
         : const Color(0xFF64748B);
 
-    return SafeArea(
-      top: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 하단 4개 탭 메뉴 바로 위에 배치되는 Google AdMob 배너 광고
-          const BottomBannerAdWidget(),
-          Container(
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? const [
-                        Color(0xFF221A36), // 상단 로얄 미드나잇 바이올렛
-                        Color(0xFF181329), // 중간 딥 바이올렛
-                        Color(0xFF120E20), // 하단 오닉스 바이올렛
-                      ]
-                    : const [
-                        Color(0xFFFBF9FF), // 상단 맑은 화이트 라벤더
-                        Color(0xFFF2ECF9), // 중간 소프트 라벤더
-                        Color(0xFFE8E0F6), // 하단 감성 인디고 바이올렛
-                      ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              border: Border(
-                top: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF2E2749)
-                      : const Color(0xFFDCD5F0),
-                  width: 1.0,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.35)
-                      : const Color(0xFF4C3A93).withValues(alpha: 0.08),
-                  blurRadius: 14,
-                  offset: const Offset(0, -4),
-                ),
-              ],
+    final mediaQuery = MediaQuery.of(context);
+    // viewPadding.bottom: 안드로이드 기기 하단 시스템 내비게이션 바(3버튼 뒤로가기/홈/최근앱 또는 제스처 바)의 실제 높이
+    final systemBottomInset = math.max(
+      mediaQuery.viewPadding.bottom,
+      mediaQuery.padding.bottom,
+    );
+    // 3버튼(약 48dp), 제스처 바(약 16~24dp) 또는 미지원 기기에서도 버튼이 묻히지 않도록 안전 여백 보장
+    final double safeBottomPadding = systemBottomInset > 0 ? systemBottomInset : 10.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 하단 4개 탭 메뉴 바로 위에 배치되는 Google AdMob 배너 광고
+        const BottomBannerAdWidget(),
+        Container(
+          padding: EdgeInsets.only(bottom: safeBottomPadding),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? const [
+                      Color(0xFF221A36), // 상단 로얄 미드나잇 바이올렛
+                      Color(0xFF181329), // 중간 딥 바이올렛
+                      Color(0xFF120E20), // 하단 오닉스 바이올렛
+                    ]
+                  : const [
+                      Color(0xFFFBF9FF), // 상단 맑은 화이트 라벤더
+                      Color(0xFFF2ECF9), // 중간 소프트 라벤더
+                      Color(0xFFE8E0F6), // 하단 감성 인디고 바이올렛
+                    ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? const Color(0xFF2E2749)
+                    : const Color(0xFFDCD5F0),
+                width: 1.0,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.35)
+                    : const Color(0xFF4C3A93).withValues(alpha: 0.08),
+                blurRadius: 14,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SizedBox(
+            height: 56,
             child: Stack(
               children: [
                 // 상단 은은한 엠보싱 하이라이트 광원 라인
@@ -129,8 +139,8 @@ class AppBottomNavBar extends ConsumerWidget {
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

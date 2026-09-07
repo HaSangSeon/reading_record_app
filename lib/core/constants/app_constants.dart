@@ -14,4 +14,9 @@ class AppConstants {
   static const String notificationHourKey = 'notification_hour_key';
   static const String notificationMinuteKey = 'notification_minute_key';
   static const String notificationDaysKey = 'notification_days_key';
+
+  // App Version & Build
+  static const String appVersion = '1.0.4';
+  static const int appBuildNumber = 8;
+  static const String versionDisplay = 'v1.0.4 (Build 8)';
 }

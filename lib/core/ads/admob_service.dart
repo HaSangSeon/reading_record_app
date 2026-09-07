@@ -104,13 +104,35 @@ class AdMobService {
     );
   }
 
-  /// 사용자의 특정 액션 카운터 증가 및 전면 광고 노출 (3회 액션 시 1회 노출)
-  void triggerActionInterstitial({int interval = 3}) {
+  DateTime? _lastInterstitialShownTime;
+
+  /// 사용자의 특정 액션 카운터 증가 및 전면 광고 노출 (기본 4회 액션당 1회 노출, 최소 3분 쿨타임)
+  void triggerActionInterstitial({
+    int interval = 4,
+    Duration coolDown = const Duration(minutes: 3),
+  }) {
     _actionCounter++;
     debugPrint('[AdMobService] Action Counter: $_actionCounter / $interval');
+
     if (_actionCounter >= interval) {
-      _actionCounter = 0;
-      showInterstitialAd();
+      final now = DateTime.now();
+      final hasElapsedCoolDown = _lastInterstitialShownTime == null ||
+          now.difference(_lastInterstitialShownTime!) >= coolDown;
+
+      if (hasElapsedCoolDown) {
+        debugPrint('[AdMobService] 카운트 및 쿨타임 충족 -> 전면 광고 노출 시도');
+        _actionCounter = 0;
+        _lastInterstitialShownTime = now;
+        showInterstitialAd();
+      } else {
+        final remainingSeconds =
+            coolDown.inSeconds - now.difference(_lastInterstitialShownTime!).inSeconds;
+        debugPrint(
+          '[AdMobService] 쿨타임 적용 중 ($remainingSeconds초 남음) -> 유저 경험 보호를 위해 광고 노출 유예',
+        );
+        // 카운터가 interval 이상으로 유지되도록 하여 쿨타임이 지난 후 다음 액션 시 바로 노출되도록 함
+        _actionCounter = interval;
+      }
     }
   }
 
@@ -118,11 +140,13 @@ class AdMobService {
   void showInterstitialAd() {
     if (_interstitialAd != null) {
       debugPrint('[AdMobService] 전면 광고 표시 실행');
+      _lastInterstitialShownTime = DateTime.now();
       _interstitialAd!.show();
     } else {
       debugPrint('[AdMobService] 전면 광고 캐시 없음 -> 로드 후 즉시 표시 시도');
       loadInterstitialAd(
         onLoaded: () {
+          _lastInterstitialShownTime = DateTime.now();
           _interstitialAd?.show();
         },
       );

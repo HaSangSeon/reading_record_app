@@ -2,8 +2,11 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../constants/app_constants.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
 
@@ -23,17 +26,23 @@ class NotificationService {
 
   bool _isInitialized = false;
 
-  /// 로컬 알림 플러그인 및 타임존 초기화
+  /// 로컬 알림 플러그인 및 기기 동적 타임존 초기화
   Future<void> init() async {
     if (_isInitialized) return;
 
     // 타임존 데이터베이스 초기화
     tz.initializeTimeZones();
     try {
-      // 한국 표준시(KST) 또는 로컬 시간대 설정
-      tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
-    } catch (_) {
-      // 타임존 로드 실패 시 기본 UTC 기반 로컬 유지
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      final currentTimeZone = timezoneInfo.identifier;
+      tz.setLocalLocation(tz.getLocation(currentTimeZone));
+      debugPrint('[Notification] 기기 로컬 타임존 설정: $currentTimeZone');
+    } catch (e) {
+      try {
+        tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
+      } catch (_) {
+        // 타임존 로드 실패 시 기본 UTC 기반 로컬 유지
+      }
     }
 
     const androidSettings = AndroidInitializationSettings(
@@ -58,6 +67,26 @@ class NotificationService {
       },
     );
 
+    // Android 8.0+ 필수: 시스템 알림 채널 사전 등록 (소리, 진동, 헤드업 배너 보장)
+    if (Platform.isAndroid) {
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidImplementation?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          channelId,
+          channelName,
+          description: channelDescription,
+          importance: Importance.high,
+          playSound: true,
+          enableVibration: true,
+          showBadge: true,
+        ),
+      );
+      debugPrint('[Notification] Android 알림 채널 등록 완료: $channelId');
+    }
+
     _isInitialized = true;
   }
 
@@ -70,7 +99,8 @@ class NotificationService {
           >();
       final granted = await androidImplementation
           ?.requestNotificationsPermission();
-      return granted ?? false;
+      // Android 12 이하는 null 반환 가능하므로 true 폴백
+      return granted ?? true;
     } else if (Platform.isIOS) {
       final iosImplementation = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -97,41 +127,75 @@ class NotificationService {
     return true;
   }
 
-  /// 안전하고 편안한 저녁 독서 리마인더 메시지 생성 (개인 메모 노출 방지)
+  /// 요일별 특색과 현재 읽고 있는 도서 상태를 반영한 스마트 알림 메시지 생성
   ({String title, String body}) _generateSmartMessage({
     List<Book>? books,
     List<Note>? notes,
+    int? dayOfWeek, // 1=월 ~ 7=일
   }) {
     final random = Random();
 
-    // 현재 읽고 있는 도서가 있는 경우 -> 책 제목 기반의 편안한 독서 권유
+    // 현재 읽고 있는 도서 (미완독 && 페이지 > 0)
     final readingBooks = (books ?? [])
         .where((b) => !b.isCompleted && b.readPages > 0)
         .toList();
 
+    const weekdayNames = {
+      1: '월요일',
+      2: '화요일',
+      3: '수요일',
+      4: '목요일',
+      5: '금요일',
+      6: '토요일',
+      7: '일요일',
+    };
+    final dayLabel = dayOfWeek != null ? weekdayNames[dayOfWeek] : null;
+
     if (readingBooks.isNotEmpty) {
-      final selectedBook = readingBooks[random.nextInt(readingBooks.length)];
-      final templates = [
-        '오늘 하루도 수고 많으셨어요. 잠들기 전 《${selectedBook.title}》과 함께 편안한 밤 보내세요 🌙',
-        '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 진행 중! 잠들기 전 잠깐의 독서로 하루를 채워보세요 📖',
-        '바쁜 일상 속 작은 쉼표, 《${selectedBook.title}》과 함께 독서의 여유를 챙겨보세요 ✨',
+      // 요일 인덱스로 책을 분배하여 여러 권을 골고루 리마인드
+      final bookIndex = dayOfWeek != null
+          ? (dayOfWeek - 1) % readingBooks.length
+          : random.nextInt(readingBooks.length);
+      final selectedBook = readingBooks[bookIndex];
+
+      final templates = <String>[
+        if (dayOfWeek == 1) ...[
+          '새로운 한 주의 시작, 잠들기 전 《${selectedBook.title}》 한 장으로 마음을 차분히 정돈해 보세요 🌙',
+          '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 진행 중! 활기찬 한 주의 독서 습관을 시작해 보세요 📖',
+        ] else if (dayOfWeek == 5) ...[
+          '한 주 동안 고생 많으셨어요! 불금의 밤, 《${selectedBook.title}》과 함께 포근한 쉼을 누려보세요 ✨',
+          '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 달성! 주말을 앞두고 잠시 책 속으로 여행을 떠나볼까요? 📚',
+        ] else if (dayOfWeek == 6 || dayOfWeek == 7) ...[
+          '여유로운 주말 저녁, 따뜻한 차 한 잔과 함께 《${selectedBook.title}》을 펼쳐보세요 ☕',
+          '주말 독서 힐링 타임! 《${selectedBook.title}》의 다음 이야기가 기다리고 있어요 📖',
+        ] else ...[
+          '오늘 하루도 수고 많으셨어요. 잠들기 전 《${selectedBook.title}》과 함께 편안한 밤 보내세요 🌙',
+          '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 진행 중! 잠들기 전 잠깐의 독서로 하루를 채워보세요 📖',
+          '바쁜 일상 속 작은 쉼표, 《${selectedBook.title}》과 함께 독서의 여유를 챙겨보세요 ✨',
+        ],
       ];
+
       return (
-        title: '오늘의 독서 리마인더 📖',
+        title: dayLabel != null ? '$dayLabel 저녁 독서 리마인더 📖' : '오늘의 독서 리마인더 📖',
         body: templates[random.nextInt(templates.length)],
       );
     }
 
-    // 기본 정갈한 독서 권유 문구
-    final defaultMessages = [
-      '오늘 하루도 수고 많으셨어요. 잠들기 전 마음을 채우는 책 한 장 어떠세요? 🌙',
-      '바쁜 일상 속 작은 쉼표, 나만의 서재에서 독서의 즐거움을 느껴보세요 ☕',
-      '독서는 나를 위한 가장 따뜻한 대화입니다. 오늘 밤 책 한 쪽을 펼쳐보세요 ✨',
+    // 등록된 읽고 있는 책이 없을 때 기본 문구
+    final defaultTemplates = <String>[
+      if (dayOfWeek == 5 || dayOfWeek == 6 || dayOfWeek == 7) ...[
+        '여유로운 주말, 마음을 채우는 책 한 장과 함께 편안한 쉼을 누려보세요 ☕',
+        '나를 위한 가장 따뜻한 주말의 대화, 나만의 서재에서 독서의 즐거움을 느껴보세요 ✨',
+      ] else ...[
+        '오늘 하루도 수고 많으셨어요. 잠들기 전 마음을 채우는 책 한 장 어떠세요? 🌙',
+        '바쁜 일상 속 작은 쉼표, 나만의 서재에서 독서의 즐거움을 느껴보세요 ☕',
+        '독서는 나를 위한 가장 따뜻한 대화입니다. 오늘 밤 책 한 쪽을 펼쳐보세요 ✨',
+      ],
     ];
 
     return (
-      title: '편안한 저녁 독서 시간 🌙',
-      body: defaultMessages[random.nextInt(defaultMessages.length)],
+      title: dayLabel != null ? '$dayLabel 저녁 독서 시간 🌙' : '편안한 저녁 독서 시간 🌙',
+      body: defaultTemplates[random.nextInt(defaultTemplates.length)],
     );
   }
 
@@ -144,40 +208,56 @@ class NotificationService {
     List<Note>? notes,
   }) async {
     await init();
-    await cancelDailyReminder();
+    // 선택에서 빠진 요일만 개별 취소하여 안드로이드 시스템 NotificationManager rate limit 방지
+    for (int day = 1; day <= 7; day++) {
+      if (!days.contains(day)) {
+        await _notificationsPlugin.cancel(
+          id: dailyReminderNotificationId + day,
+        );
+      }
+    }
+    await _notificationsPlugin.cancel(id: dailyReminderNotificationId);
 
     if (days.isEmpty) return;
-
-    final message = _generateSmartMessage(books: books, notes: notes);
-
-    final androidDetails = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-      styleInformation: BigTextStyleInformation(
-        message.body,
-        contentTitle: message.title,
-      ),
-    );
-
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-      macOS: darwinDetails,
-    );
 
     final now = tz.TZDateTime.now(tz.local);
 
     for (final day in days) {
       if (day < 1 || day > 7) continue;
+
+      // 요일마다 개별화된 문구 생성 (요일별 특색 및 여러 책 고루 분배)
+      final message = _generateSmartMessage(
+        books: books,
+        notes: notes,
+        dayOfWeek: day,
+      );
+
+      final androidDetails = AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: channelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+        styleInformation: BigTextStyleInformation(
+          message.body,
+          contentTitle: message.title,
+        ),
+      );
+
+      const darwinDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: darwinDetails,
+        macOS: darwinDetails,
+      );
 
       var daysUntil = (day - now.weekday) % 7;
       var scheduledDate = tz.TZDateTime(
@@ -213,6 +293,46 @@ class NotificationService {
     }
   }
 
+  /// 앱 시작 시 또는 독서 데이터 변경 시 활성화된 알림 스케줄 자동 동기화/재등록
+  Future<void> rescheduleIfEnabled({
+    List<Book>? books,
+    List<Note>? notes,
+  }) async {
+    if (!Hive.isBoxOpen(AppConstants.settingsBoxName)) return;
+    final box = Hive.box(AppConstants.settingsBoxName);
+    final isEnabled =
+        box.get(AppConstants.notificationEnabledKey, defaultValue: false) as bool;
+
+    if (!isEnabled) return;
+
+    final hour =
+        box.get(AppConstants.notificationHourKey, defaultValue: 21) as int;
+    final minute =
+        box.get(AppConstants.notificationMinuteKey, defaultValue: 30) as int;
+    final rawDays = box.get(AppConstants.notificationDaysKey);
+
+    List<int> days = [1, 2, 3, 4, 5, 6, 7];
+    if (rawDays is List) {
+      days = rawDays.map((e) => (e as num).toInt()).toList();
+      if (days.isEmpty) days = [1, 2, 3, 4, 5, 6, 7];
+    }
+
+    // books가 전달되지 않은 경우 Hive에서 직접 가져옴
+    List<Book>? targetBooks = books;
+    if (targetBooks == null && Hive.isBoxOpen(AppConstants.bookBoxName)) {
+      final booksBox = Hive.box<Book>(AppConstants.bookBoxName);
+      targetBooks = booksBox.values.toList();
+    }
+
+    await scheduleReminder(
+      hour: hour,
+      minute: minute,
+      days: days,
+      books: targetBooks,
+      notes: notes,
+    );
+  }
+
   /// 기존 메서드 호환성 유지 (매일 알림)
   Future<void> scheduleDailyReminder({
     required int hour,
@@ -245,6 +365,9 @@ class NotificationService {
       channelDescription: channelDescription,
       importance: Importance.high,
       priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
       styleInformation: BigTextStyleInformation(
         message.body,
         contentTitle: message.title,

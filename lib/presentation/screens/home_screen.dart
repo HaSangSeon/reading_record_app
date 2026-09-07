@@ -8,6 +8,7 @@ import '../controllers/theme_controller.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_form_dialog.dart';
 import '../widgets/book_search_dialog.dart';
+import '../widgets/library_background.dart';
 import '../widgets/stats_header.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -54,15 +55,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               )
             : Row(
                 children: [
-                  Icon(
-                    Icons.auto_stories_rounded,
-                    color: isDark
-                        ? AppTheme.primaryLight
-                        : AppTheme.primaryColor,
-                    size: 26,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFF4C3A93), const Color(0xFF6B4BC8)]
+                            : [AppTheme.primaryColor, const Color(0xFF818CF8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.auto_stories_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    '내 서재',
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(width: 8),
-                  const Text('내 로컬 서재'),
+                  allBooksAsync.when(
+                    data: (books) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '${books.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
+                        ),
+                      ),
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                  ),
                 ],
               ),
         actions: [
@@ -169,74 +229,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? [
-                    const Color(0xFF0C0E17),
-                    const Color(0xFF131726),
-                    const Color(0xFF0C0E17),
-                  ]
-                : [
-                    const Color(0xFFF7F5FC),
-                    const Color(0xFFF1EDF8),
-                    const Color(0xFFF6F4FA),
-                  ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          RepaintBoundary(
+            child: LibraryBackground(isDark: isDark),
           ),
-        ),
-        child: filteredBooksAsync.when(
-          data: (books) {
-            return CustomScrollView(
-              slivers: [
-                // 독서 통계 배너
-                SliverToBoxAdapter(child: StatsHeader(books: books)),
+          filteredBooksAsync.when(
+            data: (books) {
+              return CustomScrollView(
+                slivers: [
+                  // 독서 통계 배너
+                  SliverToBoxAdapter(child: StatsHeader(books: books)),
 
-                // 프리미엄 일체형 세그먼트 필터 바 (전체 / 읽는 중 / 완독)
-                SliverToBoxAdapter(
-                  child: _buildSegmentedFilterBar(
-                    context,
-                    ref,
-                    currentFilter: currentFilter,
-                    allBooks: allBooksAsync.value ?? [],
-                    isDark: isDark,
-                  ),
-                ),
-
-                // 도서 목록 그리드/리스트
-                if (books.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _buildEmptyState(context),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      top: 8,
-                      bottom: 90,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final book = books[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: BookCard(book: book),
-                        );
-                      }, childCount: books.length),
+                  // 프리미엄 일체형 세그먼트 필터 바 (전체 / 읽는 중 / 완독)
+                  SliverToBoxAdapter(
+                    child: _buildSegmentedFilterBar(
+                      context,
+                      ref,
+                      currentFilter: currentFilter,
+                      allBooks: allBooksAsync.value ?? [],
+                      isDark: isDark,
                     ),
                   ),
-              ],
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryColor),
+
+                  // 도서 목록 그리드/리스트
+                  if (books.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmptyState(context),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 8,
+                        bottom: 90,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final book = books[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: BookCard(book: book),
+                          );
+                        }, childCount: books.length),
+                      ),
+                    ),
+                ],
+              );
+            },
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            ),
+            error: (err, stack) => Center(child: Text('오류가 발생했습니다: $err')),
           ),
-          error: (err, stack) => Center(child: Text('오류가 발생했습니다: $err')),
-        ),
+        ],
       ),
     );
   }
@@ -247,101 +296,405 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    '새 책 등록',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? AppTheme.darkTextPrimary
-                          : AppTheme.textPrimary,
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkSurface : Colors.white,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? [
+                      const Color(0xFF1E1B2E),
+                      AppTheme.darkSurface,
+                      AppTheme.darkBackground,
+                    ]
+                  : [
+                      const Color(0xFFFAF8FE),
+                      Colors.white,
+                      const Color(0xFFF6F4FA),
+                    ],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : const Color(0xFFE2D9F3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
+                blurRadius: 24,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 상단 드래그 핸들 바
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4.5,
+                      margin: const EdgeInsets.only(bottom: 18),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : Colors.black.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
+
+                  // 프리미엄 헤더 (아이콘 + 타이틀/서브타이틀 + 닫기 버튼)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [
+                                    AppTheme.primaryLight,
+                                    const Color(0xFF4F46E5),
+                                  ]
+                                : [
+                                    const Color(0xFF6366F1),
+                                    AppTheme.primaryColor,
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isDark
+                                      ? AppTheme.primaryLight
+                                      : AppTheme.primaryColor)
+                                  .withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.auto_stories_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '새 도서 등록',
+                              style: TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                                color: isDark
+                                    ? AppTheme.darkTextPrimary
+                                    : AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '나만의 서재에 소중한 책을 담아보세요',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => Navigator.pop(ctx),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.05),
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 은은한 그라데이션 구분선
+                  Container(
+                    height: 1,
+                    margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.travel_explore_rounded,
-                      color: primary,
-                      size: 24,
-                    ),
-                  ),
-                  title: const Text(
-                    '온라인 도서 검색',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                  subtitle: const Text(
-                    '국립중앙도서관/카카오 API로 도서 정보 자동 등록',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    BookSearchDialog.show(context);
-                  },
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.edit_note_rounded,
-                      color: AppTheme.accentColor,
-                      size: 24,
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [
+                                Colors.white.withValues(alpha: 0.02),
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.white.withValues(alpha: 0.02),
+                              ]
+                            : [
+                                Colors.black.withValues(alpha: 0.02),
+                                const Color(0xFFE2D9F3),
+                                Colors.black.withValues(alpha: 0.02),
+                              ],
+                      ),
                     ),
                   ),
-                  title: const Text(
-                    '직접 입력하여 등록',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+
+                  // 1. 온라인 도서 검색 카드 (추천)
+                  _buildBookAddOptionCard(
+                    isDark: isDark,
+                    badgeText: '추천 • 빠른 검색',
+                    badgeColor: primary,
+                    gradientColors: const [
+                      Color(0xFF6366F1),
+                      Color(0xFF0284C7),
+                    ],
+                    icon: Icons.travel_explore_rounded,
+                    title: '온라인 도서 검색',
+                    description: '국립중앙도서관·카카오 공식 DB를 통해\n표지와 도서 정보를 1초 만에 자동 완성해요.',
+                    borderColor: isDark
+                        ? primary.withValues(alpha: 0.25)
+                        : const Color(0xFFDDD6FE),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      BookSearchDialog.show(context);
+                    },
                   ),
-                  subtitle: const Text(
-                    '표지 사진 첨부 및 수기 정보 입력',
-                    style: TextStyle(fontSize: 12),
+
+                  const SizedBox(height: 12),
+
+                  // 2. 직접 입력하여 등록 카드
+                  _buildBookAddOptionCard(
+                    isDark: isDark,
+                    badgeText: '자유로운 수기 작성',
+                    badgeColor: AppTheme.accentColor,
+                    gradientColors: const [
+                      Color(0xFFF59E0B),
+                      Color(0xFFEA580C),
+                    ],
+                    icon: Icons.edit_note_rounded,
+                    title: '직접 입력하여 등록',
+                    description: '소장 중인 책의 실물 표지를 직접 촬영하고\n원하는 세부 정보와 메모를 자유롭게 기록해요.',
+                    borderColor: isDark
+                        ? AppTheme.accentColor.withValues(alpha: 0.25)
+                        : const Color(0xFFFED7AA),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      BookFormDialog.show(context);
+                    },
                   ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+
+                  const SizedBox(height: 14),
+
+                  // 하단 부드러운 팁 문구
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline_rounded,
+                          size: 14,
+                          color: isDark
+                              ? AppTheme.darkTextLight
+                              : AppTheme.textLight,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '검색되지 않는 독립출판물이나 고서는 직접 등록을 추천해요.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark
+                                ? AppTheme.darkTextLight
+                                : AppTheme.textLight,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    BookFormDialog.show(context);
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildBookAddOptionCard({
+    required bool isDark,
+    required String badgeText,
+    required Color badgeColor,
+    required List<Color> gradientColors,
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color borderColor,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.25)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 좌측 입체 그라데이션 아이콘
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: gradientColors.first.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 26),
+                ),
+                const SizedBox(width: 15),
+
+                // 중앙 텍스트 그룹
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 상단 캡슐 태그 뱃지
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(
+                            alpha: isDark ? 0.18 : 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? (badgeColor == AppTheme.primaryColor
+                                    ? AppTheme.primaryLight
+                                    : badgeColor)
+                                : badgeColor,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      // 타이틀
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      // 설명
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // 우측 진입 버튼 아이콘
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.04),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 13,
+                    color: isDark
+                        ? AppTheme.darkTextLight
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

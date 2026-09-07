@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/notifications/notification_service.dart';
 import '../../data/models/book_model.dart';
 import '../../domain/repositories/book_repository.dart';
 import '../../providers/repository_providers.dart';
@@ -83,6 +84,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
       );
 
       await _bookRepository.addBook(newBook);
+      _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -96,6 +98,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await _bookRepository.updateBook(book);
+      _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -109,6 +112,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await _bookRepository.deleteBook(id);
+      _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -131,6 +135,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     );
 
     await _bookRepository.updateBook(updated);
+    _refreshReminderAsync();
   }
 
   /// 완독 여부 토글
@@ -146,5 +151,11 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     );
 
     await _bookRepository.updateBook(updated);
+    _refreshReminderAsync();
+  }
+
+  /// 알림이 활성화되어 있을 경우 백그라운드에서 최신 도서 정보를 리마인더에 반영
+  void _refreshReminderAsync() {
+    NotificationService().rescheduleIfEnabled().catchError((_) {});
   }
 }

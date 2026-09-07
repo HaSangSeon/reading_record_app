@@ -15,4 +15,14 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- Theme applied to UCropActivity for professional edge-to-edge camera scanning -->
+    <style name="CustomUCropTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#0A0B0E</item>
+        <item name="android:fitsSystemWindows">true</item>
+        <item name="android:statusBarColor">#111318</item>
+        <item name="android:navigationBarColor">#111318</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>
