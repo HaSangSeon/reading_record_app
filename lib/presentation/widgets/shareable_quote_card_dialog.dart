@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -457,7 +458,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                 top: 18,
                 left: 20,
                 right: 20,
-                bottom: MediaQuery.of(context).padding.bottom + 24,
+                bottom: math.max(MediaQuery.of(context).viewPadding.bottom, MediaQuery.of(context).padding.bottom) + 24,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

@@ -742,6 +742,101 @@ class SettingsBackupScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.8,
+                    color: cardBorderColor.withValues(alpha: 0.6),
+                  ),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.mail_outline_rounded,
+                        size: 20,
+                        color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                      ),
+                    ),
+                    title: const Text(
+                      '의견 보내기 / 문의하기',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: const Text(
+                      '버그 제보 및 기능 제안을 개발자에게 직접 전송합니다.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: () => _showFeedbackDialog(context),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.8,
+                    color: cardBorderColor.withValues(alpha: 0.6),
+                  ),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        size: 20,
+                        color: Colors.teal,
+                      ),
+                    ),
+                    title: const Text(
+                      '데이터 보호 및 개인정보 안내',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: const Text(
+                      '100% 온디바이스 로컬 저장 원칙 및 정책을 안내합니다.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: () => _showPrivacyDialog(context),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.8,
+                    color: cardBorderColor.withValues(alpha: 0.6),
+                  ),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.description_outlined,
+                        size: 20,
+                        color: Colors.indigo,
+                      ),
+                    ),
+                    title: const Text(
+                      '오픈소스 라이선스',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: const Text(
+                      '앱에 사용된 오픈소스 소프트웨어 라이선스 목록입니다.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                    onTap: () {
+                      showLicensePage(
+                        context: context,
+                        applicationName: '독서한줄',
+                        applicationVersion: AppConstants.versionDisplay,
+                        applicationLegalese: '© 2026 독서한줄. All rights reserved.',
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1455,6 +1550,223 @@ class SettingsBackupScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showFeedbackDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const supportEmail = 'hasangseon.dev@gmail.com';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E242B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
+                    .withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.mark_email_read_rounded,
+                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              '의견 / 문의하기',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '독서한줄을 이용해 주셔서 감사합니다!\n소중한 의견, 개선 제안, 버그 제보는 언제든 환영합니다.',
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.45,
+                color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF151A20) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2E3842) : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.email_outlined, size: 18, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: SelectableText(
+                      supportEmail,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    tooltip: '이메일 주소 복사',
+                    onPressed: () {
+                      Clipboard.setData(const ClipboardData(text: supportEmail));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('문의 이메일 주소가 복사되었습니다.'),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E242B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.teal.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.security_rounded,
+                color: Colors.teal,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              '데이터 보호 및 개인정보',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPrivacyPoint(
+                icon: Icons.phonelink_lock_rounded,
+                color: Colors.green,
+                title: '100% 온디바이스 로컬 저장',
+                desc: '사용자가 등록한 도서, 독서 기록, 메모는 외부 서버로 일절 전송되지 않으며, 사용자의 기기 내부 안전한 로컬 저장소에만 보관됩니다.',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildPrivacyPoint(
+                icon: Icons.search_rounded,
+                color: Colors.blue,
+                title: '온라인 도서 검색',
+                desc: '도서 검색 시 카카오 및 구글 공식 검색 API를 통해 암호화된(HTTPS) 통신으로 책 제목과 표지 정보만을 조회합니다.',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildPrivacyPoint(
+                icon: Icons.ads_click_rounded,
+                color: Colors.amber,
+                title: '구글 AdMob 광고 연동',
+                desc: '무료 앱 운영을 위해 구글 모바일 광고 SDK가 포함되어 있으며, 구글 플레이 정책을 철저히 준수합니다.',
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrivacyPoint({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String desc,
+    required bool isDark,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 2),
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  height: 1.4,
+                  color: isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

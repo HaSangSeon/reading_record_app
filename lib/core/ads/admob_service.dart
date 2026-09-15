@@ -136,20 +136,15 @@ class AdMobService {
     }
   }
 
-  /// 전면 광고 즉시 표시
+  /// 전면 광고 즉시 표시 (캐시가 있을 때만 즉시 표시하여 뒤늦은 깜짝 팝업 방지)
   void showInterstitialAd() {
     if (_interstitialAd != null) {
       debugPrint('[AdMobService] 전면 광고 표시 실행');
       _lastInterstitialShownTime = DateTime.now();
       _interstitialAd!.show();
     } else {
-      debugPrint('[AdMobService] 전면 광고 캐시 없음 -> 로드 후 즉시 표시 시도');
-      loadInterstitialAd(
-        onLoaded: () {
-          _lastInterstitialShownTime = DateTime.now();
-          _interstitialAd?.show();
-        },
-      );
+      debugPrint('[AdMobService] 전면 광고 캐시 없음 -> 백그라운드 사전 로드만 트리거 (갑작스러운 팝업 방지)');
+      loadInterstitialAd();
     }
   }
 }

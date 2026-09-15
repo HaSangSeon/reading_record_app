@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
@@ -20,9 +21,13 @@ class ActionBottomSheet {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      builder: (ctx) {
+        final mq = MediaQuery.of(ctx);
+        final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+        return SafeArea(
+          bottom: false,
+          child: Container(
+            margin: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1B2332) : Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -287,7 +292,8 @@ class ActionBottomSheet {
             ],
           ),
         ),
-      ),
+        );
+      },
     );
   }
 
@@ -310,9 +316,13 @@ class ActionBottomSheet {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      builder: (ctx) {
+        final mq = MediaQuery.of(ctx);
+        final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+        return SafeArea(
+          bottom: false,
+          child: Container(
+            margin: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1B2332) : Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -495,7 +505,8 @@ class ActionBottomSheet {
             ],
           ),
         ),
-      ),
+        );
+      },
     );
   }
 

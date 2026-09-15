@@ -471,8 +471,9 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
           Flexible(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
-                bottom: mediaQuery.viewInsets.bottom +
-                    math.max(mediaQuery.viewPadding.bottom, 24.0),
+                bottom: mediaQuery.viewInsets.bottom > 0
+                    ? mediaQuery.viewInsets.bottom + 24.0
+                    : math.max(mediaQuery.viewPadding.bottom, mediaQuery.padding.bottom) + 32.0,
                 left: 20,
                 right: 20,
                 top: 18,

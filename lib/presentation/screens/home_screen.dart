@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
@@ -299,6 +300,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
+        final mq = MediaQuery.of(ctx);
+        final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppTheme.darkSurface : Colors.white,
@@ -333,8 +336,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           child: SafeArea(
+            bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + bottomInset),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

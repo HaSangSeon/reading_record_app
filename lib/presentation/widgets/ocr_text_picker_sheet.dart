@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/ocr_service.dart';
@@ -77,6 +78,10 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mediaQuery = MediaQuery.of(context);
+    final systemBottomInset = math.max(
+      mediaQuery.viewPadding.bottom,
+      mediaQuery.padding.bottom,
+    );
 
     return Container(
       constraints: BoxConstraints(
@@ -256,19 +261,24 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
           // 2. 본문 영역 (로딩 or 에러 or 텍스트 에디터)
           Flexible(
             child: _isLoading
-                ? _buildLoadingState(isDark)
+                ? _buildLoadingState(isDark, systemBottomInset)
                 : _errorMessage != null
-                    ? _buildErrorState(isDark)
-                    : _buildEditorState(isDark, mediaQuery),
+                    ? _buildErrorState(isDark, systemBottomInset)
+                    : _buildEditorState(isDark, mediaQuery, systemBottomInset),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLoadingState(bool isDark) {
+  Widget _buildLoadingState(bool isDark, double systemBottomInset) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        60,
+        24,
+        60 + systemBottomInset + 32.0,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -306,9 +316,14 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
     );
   }
 
-  Widget _buildErrorState(bool isDark) {
+  Widget _buildErrorState(bool isDark, double systemBottomInset) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        40,
+        24,
+        40 + systemBottomInset + 32.0,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -349,13 +364,21 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
     );
   }
 
-  Widget _buildEditorState(bool isDark, MediaQueryData mediaQuery) {
+  Widget _buildEditorState(
+    bool isDark,
+    MediaQueryData mediaQuery,
+    double systemBottomInset,
+  ) {
+    final bottomInset = mediaQuery.viewInsets.bottom > 0
+        ? mediaQuery.viewInsets.bottom + 24.0
+        : systemBottomInset + 32.0;
+
     return SingleChildScrollView(
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
         top: 16,
-        bottom: mediaQuery.viewInsets.bottom + 20,
+        bottom: bottomInset,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

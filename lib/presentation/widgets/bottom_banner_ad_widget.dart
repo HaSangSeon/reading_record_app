@@ -26,15 +26,12 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
     final adUnitId = AdMobService.bannerAdUnitId;
     if (adUnitId.isEmpty) return;
 
-    // 기기 화면 가로 폭 100%를 가져와서 꽉 차는 적응형 배너 사이즈 생성
+    // 기기 화면 가로 폭 100%를 가져와서 꽉 차는 표준 적응형 배너 사이즈 생성
     final width = MediaQuery.of(context).size.width.truncate();
-    final orientation = MediaQuery.of(context).orientation;
 
     // ignore: deprecated_member_use
-    final size =
-        await AdSize.getAnchoredAdaptiveBannerAdSize(orientation, width) ??
-        // ignore: deprecated_member_use
-        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width) ??
+        await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
 
     if (size == null) return;
 
@@ -46,9 +43,17 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
       size: size, // 기기 가로 100% 꽉 채우는 AdSize
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (ad) {
+        onAdLoaded: (ad) async {
+          final banner = ad as BannerAd;
+          final platformSize = await banner.getPlatformAdSize();
+          debugPrint(
+            '[BottomBannerAdWidget] 배너 로드 성공! 요청 size: ${_adSize?.width}x${_adSize?.height}, 실제 size: ${platformSize?.width}x${platformSize?.height}',
+          );
           if (mounted) {
             setState(() {
+              if (platformSize != null) {
+                _adSize = platformSize;
+              }
               _isAdLoaded = true;
             });
           }
@@ -88,7 +93,7 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
       height: _adSize!.height.toDouble(),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E242B) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF1E242B) : Colors.white,
         border: Border(
           top: BorderSide(
             color: isDark ? const Color(0xFF2C353F) : const Color(0xFFE2E8F0),
