@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/services/firebase_service.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/repository_providers.dart';
-import '../controllers/backup_controller.dart';
 import '../controllers/notification_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../widgets/time_picker_select_dialog.dart';
@@ -25,22 +25,18 @@ class SettingsBackupScreen extends ConsumerWidget {
     final booksCount = books.length;
     final notesCount = notes.length;
 
-    final cardBgColor = isDark ? AppTheme.darkSurface : Colors.white;
-    final cardBorderColor = isDark ? AppTheme.darkBorder : AppTheme.borderColor;
+    final cardBgColor = isDark ? const Color(0xFF1E242B) : Colors.white;
+    final cardBorderColor = isDark ? const Color(0xFF2C3540) : const Color(0xFFE2E8F0);
 
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: AppTheme.buildAppBarFlexibleSpace(isDark),
-        title: Row(
-          children: [
-            Icon(
-              Icons.settings_suggest_rounded,
-              color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-              size: 26,
-            ),
-            const SizedBox(width: 8),
-            const Text('설정 및 데이터 백업'),
-          ],
+        title: const Text(
+          '설정',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
         ),
         actions: [
           IconButton(
@@ -56,966 +52,423 @@ class SettingsBackupScreen extends ConsumerWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 로컬 앱 안내 카드
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppTheme.primaryLight.withValues(alpha: 0.1)
-                    : AppTheme.backgroundColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    color: isDark
-                        ? AppTheme.primaryLight
-                        : AppTheme.primaryColor,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '100% 온디바이스 로컬 저장소',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppTheme.darkTextPrimary
-                                : AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '서버로 전송되지 않으며, 스마트폰 기기 내 Hive 데이터베이스에 안전하게 보관됩니다.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? AppTheme.darkTextSecondary
-                                : AppTheme.textSecondary,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            // 1. 프리미엄 서재 프로필 & 클라우드 동기화 히어로 카드
+            _buildHeroProfileCard(
+              context: context,
+              ref: ref,
+              isDark: isDark,
+              booksCount: booksCount,
+              notesCount: notesCount,
+              cardBgColor: cardBgColor,
+              cardBorderColor: cardBorderColor,
             ),
 
             const SizedBox(height: 24),
-            _buildSectionHeader('독서 리마인더 알림 (100% 온디바이스)', context),
-            Card(
-              color: cardBgColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: cardBorderColor),
-              ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    value: notificationState.isEnabled,
-                    onChanged: (val) async {
-                      final success = await ref
-                          .read(notificationControllerProvider.notifier)
-                          .toggleNotification(val, books: books, notes: notes);
-                      if (!success && val && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              '알림 권한이 필요합니다. 기기 설정에서 알림을 허용해주세요.',
-                            ),
-                            backgroundColor: Colors.redAccent,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    secondary: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color:
-                            (isDark
-                                    ? AppTheme.primaryLight
-                                    : AppTheme.primaryColor)
-                                .withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.notifications_active_rounded,
-                        color: isDark
-                            ? AppTheme.primaryLight
-                            : AppTheme.primaryColor,
-                      ),
-                    ),
-                    title: const Text(
-                      '감성 독서 리마인더 알림',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    subtitle: const Text(
-                      '원하는 요일과 시간에 편안한 독서 습관을 챙겨주는 리마인더를 보냅니다.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  if (notificationState.isEnabled) ...[
-                    Divider(height: 1, indent: 64, color: cardBorderColor),
-                    ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFF59E0B,
-                          ).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.access_time_rounded,
-                          color: Color(0xFFF59E0B),
-                        ),
-                      ),
-                      title: const Text(
-                        '알림 시간 설정',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${notificationState.daysSummary} ${notificationState.time.format(context)}에 발송됩니다.',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '• 기기 절전 모드 정책에 따라 몇 분 정도 차이가 날 수 있습니다.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (isDark
-                                      ? AppTheme.primaryLight
-                                      : AppTheme.primaryColor)
-                                  .withValues(alpha: isDark ? 0.2 : 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          notificationState.time.format(context),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
-                          ),
-                        ),
-                      ),
-                      onTap: () async {
-                        final picked = await TimePickerSelectDialog.show(
-                          context: context,
-                          initialTime: notificationState.time,
-                          title: '독서 알림 시간 설정',
-                        );
-                        if (picked != null) {
-                          await ref
-                              .read(notificationControllerProvider.notifier)
-                              .setTime(picked, books: books, notes: notes);
-                        }
-                      },
-                    ),
-                    Divider(height: 1, indent: 64, color: cardBorderColor),
-                    // 요일 선택 섹션
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF6366F1,
-                                  ).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.event_repeat_rounded,
-                                  color: Color(0xFF6366F1),
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      '반복 요일 선택',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '현재 설정: ${notificationState.daysSummary}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDark
-                                            ? AppTheme.primaryLight
-                                            : AppTheme.primaryColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // 빠른 프리셋 버튼 (매일 / 평일 / 주말)
-                          Row(
-                            children: [
-                              _buildWeekdayPresetChip(
-                                label: '매일',
-                                isSelected:
-                                    notificationState.selectedDays.length == 7,
-                                onTap: () => ref
-                                    .read(
-                                      notificationControllerProvider.notifier,
-                                    )
-                                    .setDays(
-                                      [1, 2, 3, 4, 5, 6, 7],
-                                      books: books,
-                                      notes: notes,
-                                    ),
-                                isDark: isDark,
-                              ),
-                              const SizedBox(width: 6),
-                              _buildWeekdayPresetChip(
-                                label: '평일 (월~금)',
-                                isSelected:
-                                    notificationState.selectedDays.length ==
-                                        5 &&
-                                    !notificationState.selectedDays.contains(
-                                      6,
-                                    ) &&
-                                    !notificationState.selectedDays.contains(7),
-                                onTap: () => ref
-                                    .read(
-                                      notificationControllerProvider.notifier,
-                                    )
-                                    .setDays(
-                                      [1, 2, 3, 4, 5],
-                                      books: books,
-                                      notes: notes,
-                                    ),
-                                isDark: isDark,
-                              ),
-                              const SizedBox(width: 6),
-                              _buildWeekdayPresetChip(
-                                label: '주말 (토·일)',
-                                isSelected:
-                                    notificationState.selectedDays.length ==
-                                        2 &&
-                                    notificationState.selectedDays.contains(
-                                      6,
-                                    ) &&
-                                    notificationState.selectedDays.contains(7),
-                                onTap: () => ref
-                                    .read(
-                                      notificationControllerProvider.notifier,
-                                    )
-                                    .setDays(
-                                      [6, 7],
-                                      books: books,
-                                      notes: notes,
-                                    ),
-                                isDark: isDark,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // 월~일 개별 요일 버튼 리스트
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              for (int d = 1; d <= 7; d++)
-                                _buildDayCircleButton(
-                                  day: d,
-                                  isSelected: notificationState.selectedDays
-                                      .contains(d),
-                                  onTap: () async {
-                                    final ok = await ref
-                                        .read(
-                                          notificationControllerProvider.notifier,
-                                        )
-                                        .toggleDay(d, books: books, notes: notes);
-                                    if (!ok && context.mounted) {
-                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: const Text(
-                                            '최소 1개 이상의 요일을 선택해야 합니다.',
-                                          ),
-                                          behavior: SnackBarBehavior.floating,
-                                          duration: const Duration(seconds: 2),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  isDark: isDark,
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Divider(height: 1, indent: 64, color: cardBorderColor),
-                    ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.successColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.send_rounded,
-                          color: AppTheme.successColor,
-                        ),
-                      ),
-                      title: const Text(
-                        '지금 즉시 테스트 알림 받기',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      subtitle: const Text(
-                        '서재 데이터를 반영한 맞춤 알림이 어떻게 오는지 확인합니다.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () async {
-                        await ref
-                            .read(notificationControllerProvider.notifier)
-                            .sendTestNotification(books: books, notes: notes);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text(
-                                '테스트 알림이 발송되었습니다! 상단 알림바를 확인해 보세요.',
-                              ),
-                              backgroundColor: AppTheme.successColor,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ],
-              ),
+
+            // 2. 독서 리마인더 알림 섹션
+            _buildSectionHeader('독서 습관 리마인더', Icons.notifications_active_outlined, isDark),
+            _buildNotificationCard(
+              context: context,
+              ref: ref,
+              notificationState: notificationState,
+              books: books,
+              notes: notes,
+              isDark: isDark,
+              cardBgColor: cardBgColor,
+              cardBorderColor: cardBorderColor,
             ),
 
             const SizedBox(height: 24),
-            _buildSectionHeader('화면 테마 설정 (Dark / Light)', context),
-            Card(
-              color: cardBgColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: cardBorderColor),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: SegmentedButton<ThemeMode>(
-                  segments: const [
-                    ButtonSegment<ThemeMode>(
-                      value: ThemeMode.light,
-                      label: Text('라이트', style: TextStyle(fontSize: 13)),
-                      icon: Icon(Icons.light_mode_rounded, size: 18),
-                    ),
-                    ButtonSegment<ThemeMode>(
-                      value: ThemeMode.dark,
-                      label: Text('다크', style: TextStyle(fontSize: 13)),
-                      icon: Icon(Icons.dark_mode_rounded, size: 18),
-                    ),
-                    ButtonSegment<ThemeMode>(
-                      value: ThemeMode.system,
-                      label: Text('시스템', style: TextStyle(fontSize: 13)),
-                      icon: Icon(Icons.brightness_auto_rounded, size: 18),
-                    ),
-                  ],
-                  selected: {themeMode},
-                  onSelectionChanged: (Set<ThemeMode> newSelection) {
-                    ref
-                        .read(themeControllerProvider.notifier)
-                        .setThemeMode(newSelection.first);
-                  },
-                  style: ButtonStyle(
-                    visualDensity: VisualDensity.compact,
-                    shape: WidgetStateProperty.all(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+
+            // 3. 화면 테마 설정 섹션
+            _buildSectionHeader('화면 테마', Icons.palette_outlined, isDark),
+            _buildThemeCard(
+              ref: ref,
+              themeMode: themeMode,
+              isDark: isDark,
+              cardBgColor: cardBgColor,
+              cardBorderColor: cardBorderColor,
             ),
 
             const SizedBox(height: 24),
-            _buildSectionHeader('데이터 저장 현황', context),
-            Card(
-              color: cardBgColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: cardBorderColor),
+
+            // 4. 앱 정보 및 데이터 보호 안내
+            _buildSectionHeader('앱 정보', Icons.info_outline_rounded, isDark),
+            _buildAppInfoCard(
+              context: context,
+              isDark: isDark,
+              cardBgColor: cardBgColor,
+              cardBorderColor: cardBorderColor,
+            ),
+
+            const SizedBox(height: 48),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 섹션 타이틀 헤더
+  Widget _buildSectionHeader(String title, IconData icon, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 17,
+            color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+          ),
+          const SizedBox(width: 7),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+              color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 1. 프리미엄 서재 프로필 및 클라우드 동기화 히어로 카드
+  Widget _buildHeroProfileCard({
+    required BuildContext context,
+    required WidgetRef ref,
+    required bool isDark,
+    required int booksCount,
+    required int notesCount,
+    required Color cardBgColor,
+    required Color cardBorderColor,
+  }) {
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.userChanges(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final isLinked = user != null && !user.isAnonymous;
+        final email = user?.email ?? '';
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: cardBorderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            ],
+          ),
+          child: Column(
+            children: [
+              // 상단: 타이틀 + 도움말 버튼
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 12, 4),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildCountItem(
-                      '등록된 도서',
-                      '$booksCount권',
-                      Icons.menu_book_rounded,
-                      context,
-                    ),
-                    Container(height: 36, width: 1, color: cardBorderColor),
-                    _buildCountItem(
-                      '작성된 독서 기록',
-                      '$notesCount개',
-                      Icons.edit_note_rounded,
-                      context,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-            _buildSectionHeader('안전 백업 및 복원 (스마트폰 교체 대비)', context),
-            Card(
-              color: cardBgColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: cardBorderColor),
-              ),
-              child: Column(
-                children: [
-                  // 원클릭 파일 공유
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
+                    Container(
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color:
-                            (isDark
-                                    ? AppTheme.primaryLight
-                                    : AppTheme.primaryColor)
-                                .withValues(alpha: 0.15),
+                        color: (isLinked ? const Color(0xFF10B981) : primary)
+                            .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        Icons.share_rounded,
-                        color: isDark
-                            ? AppTheme.primaryLight
-                            : AppTheme.primaryColor,
+                        isLinked
+                            ? Icons.cloud_done_rounded
+                            : Icons.cloud_sync_rounded,
+                        color: isLinked ? const Color(0xFF10B981) : primary,
+                        size: 20,
                       ),
                     ),
-                    title: const Text(
-                      '백업 파일 공유하기 (추천)',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: const Text(
-                      '카카오톡(나와의 채팅), 구글 드라이브, 파일 앱으로 백업 파일을 전송합니다.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => _exportAndShare(context, ref),
-                  ),
-                  Divider(height: 1, indent: 64, color: cardBorderColor),
-
-                  // 파일 선택기 복원
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.folder_open_rounded,
-                        color: AppTheme.successColor,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isLinked ? 'Google 클라우드 동기화' : '클라우드 백업 & 복원',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ),
-                    title: const Text(
-                      '백업 파일 불러오기 (복원)',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: const Text(
-                      '보관해둔 백업 파일(.json)을 선택해 서재를 복원합니다.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => _importFromFile(context, ref),
-                  ),
-                  Divider(height: 1, indent: 64, color: cardBorderColor),
-
-                  // 텍스트 복사/붙여넣기 고급 옵션
-                  ExpansionTile(
-                    shape: const Border(),
-                    collapsedShape: const Border(),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.code_rounded, color: Colors.grey),
-                    ),
-                    title: const Text(
-                      '텍스트 직접 복사 / 붙여넣기 (고급)',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                    // 도움말 안내 칩 버튼
+                    InkWell(
+                      onTap: () => _showCloudSyncHelpDialog(context),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: primary.withValues(alpha: isDark ? 0.2 : 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: primary.withValues(alpha: 0.3),
+                            width: 0.8,
+                          ),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.copy_rounded, size: 16),
-                                label: const Text(
-                                  'JSON 복사',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                onPressed: () => _exportDataText(context, ref),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.paste_rounded, size: 16),
-                                label: const Text(
-                                  'JSON 붙여넣기',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                onPressed: () =>
-                                    _showImportDialog(context, ref),
+                            Icon(Icons.help_outline_rounded, size: 14, color: primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              '안내',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: primary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 24),
-            _buildSectionHeader('데이터 관리', context),
-            Card(
-              color: cardBgColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: cardBorderColor),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
+              // 중단: 상세 상태 안내 + 로그인/연동 버튼
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: isDark
+                        ? const Color(0xFF161B22)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF26303B) : const Color(0xFFE2E8F0),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.delete_forever_rounded,
-                    color: Colors.redAccent,
-                  ),
-                ),
-                title: const Text(
-                  '모든 데이터 초기화',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.redAccent,
-                  ),
-                ),
-                subtitle: const Text(
-                  '서재의 모든 도서와 기록을 영구적으로 삭제합니다.',
-                  style: TextStyle(fontSize: 12),
-                ),
-                onTap: () => _confirmResetAll(
-                  context,
-                  ref,
-                  booksCount: booksCount,
-                  notesCount: notesCount,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-            _buildSectionHeader('앱 정보', context),
-            Card(
-              color: cardBgColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: cardBorderColor),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    title: const Text('앱 버전', style: TextStyle(fontSize: 14)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          AppConstants.versionDisplay,
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: isLinked
+                                        ? AppTheme.successColor
+                                        : (isDark ? Colors.grey[500] : Colors.grey[600]),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isLinked ? '클라우드 동기화 켜짐' : '현재 스마트폰에만 저장 중',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isLinked
+                                        ? AppTheme.successColor
+                                        : (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              isLinked
+                                  ? '$email\n다른 기기(태블릿 등)와 실시간 자동 동기화됩니다.'
+                                  : '기기 변경이나 앱 삭제 시 데이터 복원을 위해 Google 계정을 연결해 보세요.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                height: 1.35,
+                                color: isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.successColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            '최신',
-                            style: TextStyle(
-                              color: AppTheme.successColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                      ),
+                      const SizedBox(width: 12),
+                      if (isLinked)
+                        OutlinedButton(
+                          onPressed: () => _handleUnlink(context, ref),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Color(0xFFFCA5A5)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
+                          child: const Text('연동 해제', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        )
+                      else
+                        ElevatedButton.icon(
+                          onPressed: () => _handleGoogleLink(context, ref),
+                          icon: const Icon(Icons.account_circle_outlined, size: 16),
+                          label: const Text(
+                            'Google 로그인',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
+                          ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-                  Divider(
-                    height: 1,
-                    thickness: 0.8,
-                    color: cardBorderColor.withValues(alpha: 0.6),
-                  ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.mail_outline_rounded,
-                        size: 20,
-                        color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-                      ),
-                    ),
-                    title: const Text(
-                      '의견 보내기 / 문의하기',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: const Text(
-                      '버그 제보 및 기능 제안을 개발자에게 직접 전송합니다.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                    onTap: () => _showFeedbackDialog(context),
-                  ),
-                  Divider(
-                    height: 1,
-                    thickness: 0.8,
-                    color: cardBorderColor.withValues(alpha: 0.6),
-                  ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        size: 20,
-                        color: Colors.teal,
-                      ),
-                    ),
-                    title: const Text(
-                      '데이터 보호 및 개인정보 안내',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: const Text(
-                      '100% 온디바이스 로컬 저장 원칙 및 정책을 안내합니다.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                    onTap: () => _showPrivacyDialog(context),
-                  ),
-                  Divider(
-                    height: 1,
-                    thickness: 0.8,
-                    color: cardBorderColor.withValues(alpha: 0.6),
-                  ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.description_outlined,
-                        size: 20,
-                        color: Colors.indigo,
-                      ),
-                    ),
-                    title: const Text(
-                      '오픈소스 라이선스',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: const Text(
-                      '앱에 사용된 오픈소스 소프트웨어 라이선스 목록입니다.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                    onTap: () {
-                      showLicensePage(
-                        context: context,
-                        applicationName: '독서한줄',
-                        applicationVersion: AppConstants.versionDisplay,
-                        applicationLegalese: '© 2026 독서한줄. All rights reserved.',
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCountItem(
-    String label,
-    String value,
-    IconData icon,
-    BuildContext context,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-          size: 24,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 원클릭 백업 파일 공유
-  Future<void> _exportAndShare(BuildContext context, WidgetRef ref) async {
-    final result = await ref
-        .read(backupControllerProvider.notifier)
-        .exportAndShareFile();
-    if (!context.mounted) return;
-
-    if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '도서 ${result.books}권, 기록 ${result.notes}개의 백업 파일이 생성되었습니다.',
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else if (result.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('백업 파일 생성 실패: ${result.error}'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  /// 파일 선택기로 복원
-  Future<void> _importFromFile(BuildContext context, WidgetRef ref) async {
-    final result = await ref
-        .read(backupControllerProvider.notifier)
-        .importFromFile();
-    if (!context.mounted) return;
-
-    if (result.success) {
-      // 복원된 도서 정보에 맞춰 알림 문구 자동 동기화
-      ref.read(notificationControllerProvider.notifier).refreshReminder();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('복원 완료! (도서 ${result.books}권, 기록 ${result.notes}개)'),
-          backgroundColor: AppTheme.successColor,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else if (result.error != null && result.error != '선택된 파일이 없습니다.') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('복원 실패: ${result.error}'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  Future<void> _exportDataText(BuildContext context, WidgetRef ref) async {
-    final jsonStr = await ref
-        .read(backupControllerProvider.notifier)
-        .exportData();
-    if (!context.mounted || jsonStr == null) return;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.code_rounded, color: AppTheme.primaryColor),
-            SizedBox(width: 8),
-            Text('JSON 백업 데이터', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? AppTheme.darkBorder : AppTheme.borderColor,
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: SelectableText(
-                jsonStr,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: isDark
-                      ? AppTheme.darkTextPrimary
-                      : AppTheme.textPrimary,
                 ),
               ),
-            ),
+
+              Divider(height: 1, thickness: 0.8, color: cardBorderColor),
+
+              // 하단: 내 서재 독서 데이터 현황 카운터
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.menu_book_rounded,
+                            size: 19,
+                            color: primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '보관 도서',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$booksCount권',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      height: 18,
+                      width: 1,
+                      color: cardBorderColor,
+                    ),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.edit_note_rounded,
+                            size: 21,
+                            color: const Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '독서 기록',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$notesCount개',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('닫기'),
+        );
+      },
+    );
+  }
+
+  /// 2. 독서 리마인더 알림 설정 카드
+  Widget _buildNotificationCard({
+    required BuildContext context,
+    required WidgetRef ref,
+    required NotificationSettingsState notificationState,
+    required List<dynamic> books,
+    required List<dynamic> notes,
+    required bool isDark,
+    required Color cardBgColor,
+    required Color cardBorderColor,
+  }) {
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.copy_rounded, size: 16),
-            label: const Text('클립보드 복사'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: jsonStr));
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
+        ],
+      ),
+      child: Column(
+        children: [
+          // 스위치 타일
+          SwitchListTile(
+            value: notificationState.isEnabled,
+            activeThumbColor: primary,
+            activeTrackColor: primary.withValues(alpha: 0.4),
+            onChanged: (val) async {
+              final success = await ref
+                  .read(notificationControllerProvider.notifier)
+                  .toggleNotification(val);
+              if (!success && val && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('백업 JSON이 클립보드에 복사되었습니다!'),
+                    content: const Text('알림 권한이 필요합니다. 기기 설정에서 알림을 허용해주세요.'),
+                    backgroundColor: Colors.redAccent,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1024,430 +477,480 @@ class SettingsBackupScreen extends ConsumerWidget {
                 );
               }
             },
+            secondary: Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                notificationState.isEnabled
+                    ? Icons.notifications_active_rounded
+                    : Icons.notifications_none_rounded,
+                color: primary,
+                size: 22,
+              ),
+            ),
+            title: const Text(
+              '독서 습관 리마인더',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                letterSpacing: -0.3,
+              ),
+            ),
+            subtitle: Text(
+              notificationState.isEnabled
+                  ? '${notificationState.daysSummary} ${notificationState.time.format(context)}에 발송'
+                  : '정해진 시간에 나만의 맞춤 독서 알림을 받습니다.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.textSecondary,
+              ),
+            ),
+          ),
+
+          // 알림 활성화 시 확장 세부 패널
+          if (notificationState.isEnabled) ...[
+            Divider(height: 1, indent: 64, color: cardBorderColor),
+
+            // 알림 시간 설정 타일
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.access_time_filled_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 20,
+                ),
+              ),
+              title: const Text(
+                '알림 시간',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              subtitle: Text(
+                '기기 배터리 최적화 정책에 따라 몇 분 정도 유연하게 도착합니다.',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: isDark ? 0.2 : 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: primary.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      notificationState.time.format(context),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        color: primary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.edit_calendar_rounded, size: 14, color: primary),
+                  ],
+                ),
+              ),
+              onTap: () async {
+                final picked = await TimePickerSelectDialog.show(
+                  context: context,
+                  initialTime: notificationState.time,
+                  title: '독서 알림 시간 설정',
+                );
+                if (picked != null) {
+                  await ref
+                      .read(notificationControllerProvider.notifier)
+                      .setTime(picked);
+                }
+              },
+            ),
+
+            Divider(height: 1, indent: 64, color: cardBorderColor),
+
+            // 반복 요일 선택 섹션
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: const Icon(
+                              Icons.event_repeat_rounded,
+                              color: Color(0xFF6366F1),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            '반복 요일',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        notificationState.daysSummary,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 요일 빠른 프리셋 버튼 (매일 / 평일 / 주말)
+                  Row(
+                    children: [
+                      _buildWeekdayPresetChip(
+                        label: '매일',
+                        isSelected: notificationState.selectedDays.length == 7,
+                        onTap: () => ref
+                            .read(notificationControllerProvider.notifier)
+                            .setDays([1, 2, 3, 4, 5, 6, 7]),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildWeekdayPresetChip(
+                        label: '평일 (월~금)',
+                        isSelected: notificationState.selectedDays.length == 5 &&
+                            !notificationState.selectedDays.contains(6) &&
+                            !notificationState.selectedDays.contains(7),
+                        onTap: () => ref
+                            .read(notificationControllerProvider.notifier)
+                            .setDays([1, 2, 3, 4, 5]),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildWeekdayPresetChip(
+                        label: '주말 (토·일)',
+                        isSelected: notificationState.selectedDays.length == 2 &&
+                            notificationState.selectedDays.contains(6) &&
+                            notificationState.selectedDays.contains(7),
+                        onTap: () => ref
+                            .read(notificationControllerProvider.notifier)
+                            .setDays([6, 7]),
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 개별 요일 원형 토글 버튼 (월~일)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (int d = 1; d <= 7; d++)
+                        _buildDayCircleButton(
+                          day: d,
+                          isSelected: notificationState.selectedDays.contains(d),
+                          onTap: () async {
+                            final ok = await ref
+                                .read(notificationControllerProvider.notifier)
+                                .toggleDay(d);
+                            if (!ok && context.mounted) {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('최소 1개 이상의 요일을 선택해야 합니다.'),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          isDark: isDark,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            Divider(height: 1, indent: 64, color: cardBorderColor),
+
+            // 즉시 테스트 알림 전송 타일
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.successColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: AppTheme.successColor,
+                  size: 19,
+                ),
+              ),
+              title: const Text(
+                '지금 즉시 테스트 알림 받기',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              ),
+              subtitle: const Text(
+                '현재 내 서재 데이터를 반영한 스마트 알림을 확인합니다.',
+                style: TextStyle(fontSize: 11.5),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+              onTap: () async {
+                await ref
+                    .read(notificationControllerProvider.notifier)
+                    .sendTestNotification();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('테스트 알림이 발송되었습니다! 상단 알림바를 확인해 보세요.'),
+                      backgroundColor: AppTheme.successColor,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 3. 화면 테마 설정 카드
+  Widget _buildThemeCard({
+    required WidgetRef ref,
+    required ThemeMode themeMode,
+    required bool isDark,
+    required Color cardBgColor,
+    required Color cardBorderColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.brightness_4_rounded,
+                  color: Color(0xFF3B82F6),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '테마 모드 선택',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '취향에 따라 라이트, 다크, 시스템 모드를 적용합니다.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.light,
+                  label: Text('라이트', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  icon: Icon(Icons.light_mode_rounded, size: 17),
+                ),
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.dark,
+                  label: Text('다크', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  icon: Icon(Icons.dark_mode_rounded, size: 17),
+                ),
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.system,
+                  label: Text('시스템', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  icon: Icon(Icons.brightness_auto_rounded, size: 17),
+                ),
+              ],
+              selected: {themeMode},
+              onSelectionChanged: (Set<ThemeMode> newSelection) {
+                ref
+                    .read(themeControllerProvider.notifier)
+                    .setThemeMode(newSelection.first);
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.standard,
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showImportDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    bool overwrite = false;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text(
-            '데이터 복원 (JSON 붙여넣기)',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  /// 4. 앱 정보 및 데이터 보호 안내 카드
+  Widget _buildAppInfoCard({
+    required BuildContext context,
+    required bool isDark,
+    required Color cardBgColor,
+    required Color cardBorderColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          content: SingleChildScrollView(
-            child: Column(
+        ],
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.verified_rounded,
+                color: Color(0xFF8B5CF6),
+                size: 20,
+              ),
+            ),
+            title: const Text('앱 버전', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            trailing: Row(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: controller,
-                  maxLines: 6,
-                  decoration: const InputDecoration(
-                    hintText: '여기에 백업된 JSON 문자열을 붙여넣으세요...',
-                    alignLabelWithHint: true,
+                const Text(
+                  AppConstants.versionDisplay,
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 12),
-                CheckboxListTile(
-                  title: const Text(
-                    '기존 데이터 덮어쓰기 (초기화 후 복원)',
-                    style: TextStyle(fontSize: 13, color: Colors.redAccent),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  value: overwrite,
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: Colors.redAccent,
-                  onChanged: (val) => setState(() => overwrite = val ?? false),
+                  child: const Text(
+                    '최신',
+                    style: TextStyle(
+                      color: AppTheme.successColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('취소'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
+          Divider(height: 1, indent: 64, thickness: 0.8, color: cardBorderColor),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.teal.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              onPressed: () async {
-                final text = controller.text.trim();
-                if (text.isEmpty) return;
-
-                final result = await ref
-                    .read(backupControllerProvider.notifier)
-                    .importData(text, overwrite: overwrite);
-
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result.success
-                            ? '데이터 복원 완료! (도서 ${result.books}권, 노트 ${result.notes}개)'
-                            : '복원 실패: ${result.error}',
-                      ),
-                      backgroundColor: result.success
-                          ? AppTheme.successColor
-                          : Colors.redAccent,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-              child: const Text('복원 실행'),
+              child: const Icon(
+                Icons.shield_outlined,
+                color: Colors.teal,
+                size: 20,
+              ),
             ),
-          ],
-        ),
+            title: const Text(
+              '데이터 보호 및 개인정보 안내',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              '안전한 로컬 저장 및 클라우드 동기화 정책을 안내합니다.',
+              style: TextStyle(fontSize: 11.5),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+            onTap: () => _showPrivacyDialog(context),
+          ),
+        ],
       ),
     );
   }
 
-  /// 모든 데이터 초기화 (2단계 안전 확인 다이얼로그)
-  Future<void> _confirmResetAll(
-    BuildContext context,
-    WidgetRef ref, {
-    required int booksCount,
-    required int notesCount,
-  }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? AppTheme.darkSurface : Colors.white;
-    final cardBg = isDark ? AppTheme.darkBackground : const Color(0xFFF8FAFC);
-    final borderColor = isDark ? AppTheme.darkBorder : AppTheme.borderColor;
-    final textPrimary = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
-    final textSecondary = isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
-
-    // [1단계 경고 다이얼로그]
-    final proceedToStep2 = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Dialog(
-        backgroundColor: dialogBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: borderColor, width: 1.2),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 상단 주의 아이콘
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.amber,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '데이터 전체 초기화 안내',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 17.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '기기에 저장된 모든 책과 소중한 독서 기록이\n영구적으로 삭제되며 되돌릴 수 없습니다.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 13,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 삭제 대상 통계 프리뷰 카드
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.redAccent.withValues(alpha: isDark ? 0.3 : 0.2),
-                    width: 1.0,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.menu_book_rounded, size: 18, color: Colors.redAccent),
-                        const SizedBox(width: 6),
-                        Text(
-                          '보관 도서 $booksCount권',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(width: 1, height: 16, color: borderColor),
-                    Row(
-                      children: [
-                        const Icon(Icons.edit_note_rounded, size: 20, color: Colors.redAccent),
-                        const SizedBox(width: 6),
-                        Text(
-                          '독서 메모 $notesCount개',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '💡 필요하신 경우 [설정 > 데이터 백업]을 통해 먼저 백업 파일을 안전하게 저장해 두실 수 있습니다.',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 11.5,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 22),
-
-              // 액션 버튼
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        side: BorderSide(color: borderColor),
-                      ),
-                      child: Text(
-                        '취소',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.pop(ctx, true);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withValues(alpha: 0.15),
-                        foregroundColor: Colors.redAccent,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: const BorderSide(color: Colors.redAccent, width: 1.0),
-                        ),
-                      ),
-                      child: const Text(
-                        '초기화 계속하기',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (proceedToStep2 != true || !context.mounted) return;
-
-    // [2단계 최종 안전 잠금 다이얼로그 (중복 질문)]
-    HapticFeedback.vibrate();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: dialogBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Colors.redAccent, width: 1.4),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 경고 엠블럼
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.delete_forever_rounded,
-                  color: Colors.red,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '정말 영구 삭제하시겠습니까?',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: isDark ? 0.18 : 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.red.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: const Text(
-                  '⚠️ 되돌릴 수 없는 최종 확인입니다.\n지금 실행하시면 등록된 모든 책과 독서 노트가 영구적으로 삭제되며 즉시 빈 서재 상태로 초기화됩니다.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 12.5,
-                    height: 1.4,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 22),
-
-              // 최종 선택 버튼 (취소를 안전하게 배치)
-              Row(
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                        foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        '취소하고 돌아가기',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 5,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedback.heavyImpact();
-                        Navigator.pop(ctx, true);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.delete_forever_rounded, size: 18),
-                          SizedBox(width: 4),
-                          Text(
-                            '영구 삭제 실행',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      final success = await ref
-          .read(backupControllerProvider.notifier)
-          .clearAllData();
-
-      // 알림 문구도 빈 서재 기본 문구로 갱신
-      ref.read(notificationControllerProvider.notifier).refreshReminder();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? '모든 데이터가 깔끔하게 초기화되었습니다.' : '초기화 실패'),
-            backgroundColor: success ? AppTheme.primaryDark : Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
+  /// 요일 프리셋 칩
   Widget _buildWeekdayPresetChip({
     required String label,
     required bool isSelected,
@@ -1457,14 +960,15 @@ class SettingsBackupScreen extends ConsumerWidget {
     final activeColor = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
               ? activeColor.withValues(alpha: isDark ? 0.25 : 0.12)
-              : (isDark ? const Color(0xFF1E242B) : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(16),
+              : (isDark ? const Color(0xFF26303B) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? activeColor
@@ -1475,19 +979,18 @@ class SettingsBackupScreen extends ConsumerWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 11.5,
+            fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
                 ? activeColor
-                : (isDark
-                      ? AppTheme.darkTextSecondary
-                      : AppTheme.textSecondary),
+                : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
           ),
         ),
       ),
     );
   }
 
+  /// 개별 요일 원형 버튼 (월~일)
   Widget _buildDayCircleButton({
     required int day,
     required bool isSelected,
@@ -1507,12 +1010,8 @@ class SettingsBackupScreen extends ConsumerWidget {
         height: 38,
         decoration: BoxDecoration(
           color: isSelected
-              ? (isWeekend
-                    ? (isDark
-                          ? const Color(0xFFE11D48)
-                          : const Color(0xFFE11D48))
-                    : activeColor)
-              : (isDark ? const Color(0xFF182028) : const Color(0xFFF1F5F9)),
+              ? (isWeekend ? const Color(0xFFE11D48) : activeColor)
+              : (isDark ? const Color(0xFF26303B) : const Color(0xFFF1F5F9)),
           shape: BoxShape.circle,
           border: Border.all(
             color: isSelected
@@ -1540,12 +1039,8 @@ class SettingsBackupScreen extends ConsumerWidget {
               color: isSelected
                   ? Colors.white
                   : (isWeekend
-                        ? (isDark
-                              ? const Color(0xFFF87171)
-                              : const Color(0xFFEF4444))
-                        : (isDark
-                              ? AppTheme.darkTextPrimary
-                              : AppTheme.textPrimary)),
+                      ? (isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444))
+                      : (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary)),
             ),
           ),
         ),
@@ -1553,103 +1048,83 @@ class SettingsBackupScreen extends ConsumerWidget {
     );
   }
 
-  void _showFeedbackDialog(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    const supportEmail = 'hasangseon.dev@gmail.com';
+  /// 구글 계정 연동 처리
+  Future<void> _handleGoogleLink(BuildContext context, WidgetRef ref) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      );
 
-    showDialog(
+      final hiveService = ref.read(hiveServiceProvider);
+      await FirebaseService().signInOrLinkWithGoogle(hiveService);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // pop loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('구글 계정이 성공적으로 연동되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // pop loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('연동 실패: $e')),
+        );
+      }
+    }
+  }
+
+  /// 구글 계정 연동 해제 처리
+  Future<void> _handleUnlink(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E242B) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: (isDark ? AppTheme.primaryLight : AppTheme.primaryColor)
-                    .withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.mark_email_read_rounded,
-                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              '의견 / 문의하기',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '독서한줄을 이용해 주셔서 감사합니다!\n소중한 의견, 개선 제안, 버그 제보는 언제든 환영합니다.',
-              style: TextStyle(
-                fontSize: 13.5,
-                height: 1.45,
-                color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF151A20) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2E3842) : const Color(0xFFE2E8F0),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.email_outlined, size: 18, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: SelectableText(
-                      supportEmail,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy_rounded, size: 18),
-                    tooltip: '이메일 주소 복사',
-                    onPressed: () {
-                      Clipboard.setData(const ClipboardData(text: supportEmail));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('문의 이메일 주소가 복사되었습니다.'),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+        title: const Text('연동 해제'),
+        content: const Text(
+          '정말 계정 연동을 해제하시겠습니까?\n이 기기의 데이터가 초기화되고 새로운 익명 계정으로 시작합니다.\n(클라우드의 기존 데이터는 안전하게 보존됩니다)',
         ),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('닫기'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('해제', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+
+    if (confirm != true) return;
+    if (!context.mounted) return;
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final hiveService = ref.read(hiveServiceProvider);
+      await FirebaseService().unlinkGoogle(hiveService);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // pop loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('연동이 해제되었습니다.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // pop loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('해제 실패: $e')),
+        );
+      }
+    }
   }
 
+  /// 개인정보 및 보안 안내 다이얼로그
   void _showPrivacyDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1687,8 +1162,8 @@ class SettingsBackupScreen extends ConsumerWidget {
               _buildPrivacyPoint(
                 icon: Icons.phonelink_lock_rounded,
                 color: Colors.green,
-                title: '100% 온디바이스 로컬 저장',
-                desc: '사용자가 등록한 도서, 독서 기록, 메모는 외부 서버로 일절 전송되지 않으며, 사용자의 기기 내부 안전한 로컬 저장소에만 보관됩니다.',
+                title: '빠른 로컬 저장 및 안전한 클라우드 동기화',
+                desc: '모든 독서 데이터는 기기(Hive)에 초고속으로 저장되며, 기기 변경이나 분실 시 복구를 위해 파이어베이스 클라우드에 암호화되어 안전하게 동기화됩니다.',
                 isDark: isDark,
               ),
               const SizedBox(height: 12),
@@ -1696,7 +1171,7 @@ class SettingsBackupScreen extends ConsumerWidget {
                 icon: Icons.search_rounded,
                 color: Colors.blue,
                 title: '온라인 도서 검색',
-                desc: '도서 검색 시 카카오 및 구글 공식 검색 API를 통해 암호화된(HTTPS) 통신으로 책 제목과 표지 정보만을 조회합니다.',
+                desc: '도서 검색 시 카카오 및 구글 공식 검색 API를 통해 암호화된(HTTPS) 통신으로 책 제목과 표지 정보만을 안전하게 조회합니다.',
                 isDark: isDark,
               ),
               const SizedBox(height: 12),
@@ -1704,7 +1179,7 @@ class SettingsBackupScreen extends ConsumerWidget {
                 icon: Icons.ads_click_rounded,
                 color: Colors.amber,
                 title: '구글 AdMob 광고 연동',
-                desc: '무료 앱 운영을 위해 구글 모바일 광고 SDK가 포함되어 있으며, 구글 플레이 정책을 철저히 준수합니다.',
+                desc: '무료 앱 운영을 위해 구글 모바일 광고 SDK가 포함되어 있으며, 구글 플레이 스토어 정책을 철저히 준수합니다.',
                 isDark: isDark,
               ),
             ],
@@ -1764,6 +1239,120 @@ class SettingsBackupScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 클라우드 동기화 및 백업 상세 안내 팝업 다이얼로그
+  void _showCloudSyncHelpDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E242B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.help_outline_rounded,
+                color: primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              '클라우드 동기화 안내',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHelpItem(
+                question: 'Google 로그인은 꼭 해야 하나요?',
+                answer: '아닙니다! 로그인하지 않아도 스마트폰 자체에 안전하게 저장되어 모든 독서 기록 기능을 100% 무료로 자유롭게 사용하실 수 있습니다.',
+                icon: Icons.check_circle_outline_rounded,
+                color: Colors.green,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 14),
+              _buildHelpItem(
+                question: 'Google 계정을 연결하면 무엇이 좋나요?',
+                answer: '• 스마트폰을 분실하거나 교체해도 기존 책과 기록이 1초 만에 그대로 복원됩니다.\n• 태블릿 등 다른 기기에서도 동일한 계정으로 접속하면 실시간으로 함께 볼 수 있습니다.',
+                icon: Icons.cloud_sync_rounded,
+                color: const Color(0xFF3B82F6),
+                isDark: isDark,
+              ),
+              const SizedBox(height: 14),
+              _buildHelpItem(
+                question: '지금까지 작성해 둔 내 기록이 사라지나요?',
+                answer: '절대 사라지지 않습니다! 로그인하는 즉시 현재 스마트폰에 저장된 모든 도서와 기록이 Google 클라우드로 안전하게 자동 업로드됩니다.',
+                icon: Icons.security_rounded,
+                color: const Color(0xFFF59E0B),
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('확인', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpItem({
+    required String question,
+    required String answer,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                question,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 23),
+          child: Text(
+            answer,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+            ),
           ),
         ),
       ],

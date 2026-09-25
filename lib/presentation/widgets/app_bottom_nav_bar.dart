@@ -128,7 +128,7 @@ class AppBottomNavBar extends ConsumerWidget {
                       ref: ref,
                       index: 3,
                       currentIndex: currentIndex,
-                      label: '설정 & 백업',
+                      label: '설정',
                       icon: Icons.settings_outlined,
                       activeIcon: Icons.settings_rounded,
                       primary: primary,

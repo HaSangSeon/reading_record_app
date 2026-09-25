@@ -259,20 +259,22 @@ class NotificationService {
         macOS: darwinDetails,
       );
 
-      var daysUntil = (day - now.weekday) % 7;
-      var scheduledDate = tz.TZDateTime(
+      var daysUntil = day - now.weekday;
+      if (daysUntil < 0) daysUntil += 7;
+
+      // 오늘인데 이미 시간이 지났거나 같은 순간이면 다음 주 동일 요일로 스케줄링
+      final isTodayPast = daysUntil == 0 &&
+          (now.hour > hour || (now.hour == hour && now.minute >= minute));
+      final finalDaysUntil = isTodayPast ? 7 : daysUntil;
+
+      final scheduledDate = tz.TZDateTime(
         tz.local,
         now.year,
         now.month,
-        now.day + daysUntil,
+        now.day + finalDaysUntil,
         hour,
         minute,
       );
-
-      // 오늘인데 이미 시간이 지났으면 7일 후로 스케줄링
-      if (daysUntil == 0 && scheduledDate.isBefore(now)) {
-        scheduledDate = scheduledDate.add(const Duration(days: 7));
-      }
 
       try {
         await _notificationsPlugin.zonedSchedule(
@@ -405,5 +407,10 @@ class NotificationService {
   /// 모든 알림 취소
   Future<void> cancelAll() async {
     await _notificationsPlugin.cancelAll();
+  }
+
+  /// 현재 시스템에 등록 대기 중인 예약 알림 목록 조회 (디버깅 및 상태 확인용)
+  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    return await _notificationsPlugin.pendingNotificationRequests();
   }
 }

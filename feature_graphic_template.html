@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>독서한줄 - 구글 플레이 그래픽 이미지 (최종)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1024px;
+      height: 500px;
+      overflow: hidden;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      background: #0E1029;
+      display: flex;
+      position: relative;
+      user-select: none;
+    }
+
+    /* 프리미엄 배경 레이어 (기존 인디고/바이올렛 무드 계승 & 심도 강화) */
+    .bg-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(125deg, #0D0F2D 0%, #161A4E 45%, #1C184A 75%, #0B0A1E 100%);
+      z-index: 0;
+    }
+
+    /* 소프트 앰비언트 글로우 라이트 */
+    .ambient-glow-1 {
+      position: absolute;
+      width: 550px;
+      height: 550px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.12) 40%, transparent 70%);
+      top: -30px;
+      right: 120px;
+      filter: blur(50px);
+      z-index: 1;
+    }
+    .ambient-glow-2 {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.16) 0%, transparent 65%);
+      bottom: 20px;
+      left: 200px;
+      filter: blur(45px);
+      z-index: 1;
+    }
+
+    /* 미세 격자 텍스처 (테크 감성) */
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      z-index: 1;
+      opacity: 0.8;
+    }
+
+    /* 좌측 텍스트 콘텐츠 영역 */
+    .content-left {
+      position: relative;
+      z-index: 10;
+      width: 540px;
+      padding-left: 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+
+    /* 상단 뱃지 그룹 */
+    .badge-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .badge-ocr {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.45), rgba(147, 51, 234, 0.35));
+      border: 1px solid rgba(192, 132, 252, 0.55);
+      border-radius: 20px;
+      padding: 6px 14px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+    .badge-ocr-text {
+      color: #F3E8FF;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .badge-local {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 20px;
+      padding: 6px 13px;
+      backdrop-filter: blur(10px);
+    }
+    .badge-local-text {
+      color: #CBD5E1;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+    }
+
+    /* 메인 타이틀 */
+    .brand-title {
+      font-size: 52px;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-title .quote-mark {
+      color: #FBBF24;
+      font-size: 40px;
+      font-weight: 900;
+      transform: translateY(-2px);
+    }
+
+    /* 포인트 바 */
+    .accent-bar {
+      width: 44px;
+      height: 3.5px;
+      background: linear-gradient(90deg, #6366F1, #A855F7);
+      border-radius: 2px;
+      margin-bottom: 14px;
+    }
+
+    /* 서브 헤드라인 (카메라 기능 강조) */
+    .headline {
+      font-size: 20.5px;
+      font-weight: 700;
+      color: #FFFFFF;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .headline .camera-tag {
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.15);
+      padding: 3px 9px;
+      border-radius: 7px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      font-size: 18px;
+    }
+
+    /* 설명 서브카피 */
+    .sub-copy {
+      font-size: 14.5px;
+      font-weight: 400;
+      color: #94A3B8;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      letter-spacing: -0.3px;
+    }
+
+    /* 하단 태그 바 (플레이트: 3대 핵심 기능 명확화) */
+    .feature-tags-bar {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 9px 18px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+      width: fit-content;
+    }
+    .tag-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #F1F5F9;
+      letter-spacing: -0.2px;
+    }
+    .tag-divider {
+      color: rgba(255, 255, 255, 0.25);
+      margin: 0 12px;
+      font-size: 11px;
+    }
+
+    /* 우측 비주얼 영역 */
+    .visual-right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 480px;
+      height: 500px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 3D 아트워크 이미지 프레임 */
+    .art-frame {
+      position: absolute;
+      width: 430px;
+      height: 430px;
+      right: 40px;
+      top: 35px;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 
+        0 24px 60px rgba(0, 0, 0, 0.65), 
+        0 0 40px rgba(99, 102, 241, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .art-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .art-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, rgba(14, 16, 41, 0.5) 0%, rgba(14, 16, 41, 0) 35%);
+      pointer-events: none;
+    }
+
+    /* 플로팅 앱 아이콘 (우측 아트워크 하단과 완벽한 앙상블) */
+    .floating-app-icon {
+      position: absolute;
+      bottom: 28px;
+      right: 380px;
+      z-index: 15;
+      width: 86px;
+      height: 86px;
+      border-radius: 20px;
+      box-shadow: 
+        0 16px 36px rgba(0, 0, 0, 0.75), 
+        0 0 24px rgba(99, 102, 241, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      background: #181329;
+      transform: rotate(-6deg);
+    }
+    .floating-app-icon img {
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      display: block;
+    }
+
+    /* 플로팅 OCR 상태 뱃지 */
+    .floating-chip {
+      position: absolute;
+      top: 50px;
+      right: 320px;
+      z-index: 16;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.6);
+      border-radius: 14px;
+      padding: 7px 14px;
+      color: #38BDF8;
+      font-size: 12.5px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 16px rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transform: rotate(2deg);
+    }
+    .floating-chip .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #38BDF8;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #38BDF8;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas"></div>
+  <div class="grid-overlay"></div>
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- 좌측 타이포그래피 영역 -->
+  <div class="content-left">
+    <div class="badge-group">
+      <div class="badge-ocr">
+        <span>📸</span>
+        <span class="badge-ocr-text">실시간 카메라 OCR 스캔</span>
+      </div>
+      <div class="badge-local">
+        <span>🔒</span>
+        <span class="badge-local-text">100% 온디바이스 로컬 저장</span>
+      </div>
+    </div>
+
+    <div class="brand-title">
+      독서한줄
+      <span class="quote-mark">”</span>
+    </div>
+
+    <div class="accent-bar"></div>
+
+    <div class="headline">
+      <span class="camera-tag">카메라로 찰칵!</span> 책 속 문장 자동 추출 & 기록
+    </div>
+
+    <div class="sub-copy">
+      일일이 손으로 타이핑할 필요 없이 책을 비추면 바로 문장 추출.<br>
+      서버 없이 내 기기에 안전하게 보관되는 가장 가볍고 감성적인 서재.
+    </div>
+
+    <!-- 3대 핵심 기능 태그 -->
+    <div class="feature-tags-bar">
+      <div class="tag-item">
+        <span>📷 스마트 OCR</span>
+      </div>
+      <div class="tag-divider">|</div>
+      <div class="tag-item">
+        <span>📖 감성 한줄 피드</span>
+      </div>
+      <div class="tag-divider">|</div>
+      <div class="tag-item">
+        <span>📊 스마트 독서 통계</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우측 비주얼 아트 영역 -->
+  <div class="visual-right">
+    <div class="art-frame">
+      <img class="art-img" src="/Users/hasangseon/.gemini/antigravity-ide/brain/2eecc0c0-cb86-4d59-8a1f-625ee10f2301/camera_ocr_book_art_1789535193003.jpg" alt="카메라 OCR 스캔 3D 일러스트">
+      <div class="art-mask"></div>
+    </div>
+  </div>
+
+  <!-- 좌우 연결 플로팅 앱 아이콘 -->
+  <div class="floating-app-icon">
+    <img src="/Users/hasangseon/reading_record_app/assets/icon/app_icon.png" alt="독서한줄 앱 아이콘">
+  </div>
+
+  <!-- 플로팅 실시간 스캔 태그 -->
+  <div class="floating-chip">
+    <div class="pulse-dot"></div>
+    <span>실시간 텍스트 인식 중</span>
+  </div>
+</body>
+</html>

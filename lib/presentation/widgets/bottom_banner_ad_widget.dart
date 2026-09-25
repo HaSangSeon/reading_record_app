@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/ads/admob_service.dart';
 
+/// 스크린샷 캡쳐용 배너 숨김 플래그 (false: 정상 광고 표시)
+const bool kHideBannerAdForScreenshot = false;
+
 class BottomBannerAdWidget extends StatefulWidget {
   const BottomBannerAdWidget({super.key});
 
@@ -17,10 +20,13 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadAdaptiveBannerAd();
+    if (!kHideBannerAdForScreenshot) {
+      _loadAdaptiveBannerAd();
+    }
   }
 
   Future<void> _loadAdaptiveBannerAd() async {
+    if (kHideBannerAdForScreenshot) return;
     if (_isAdLoaded && _bannerAd != null) return;
 
     final adUnitId = AdMobService.bannerAdUnitId;
@@ -82,7 +88,7 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isAdLoaded || _bannerAd == null || _adSize == null) {
+    if (kHideBannerAdForScreenshot || !_isAdLoaded || _bannerAd == null || _adSize == null) {
       return const SizedBox.shrink();
     }
 

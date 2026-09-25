@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/hive_service.dart';
 import '../data/models/book_model.dart';
 import '../data/models/note_model.dart';
-import '../data/repositories/hive_book_repository.dart';
-import '../data/repositories/hive_note_repository.dart';
+import '../core/services/firebase_service.dart';
+import '../core/services/network_sync_service.dart';
+import '../data/repositories/sync_book_repository.dart';
+import '../data/repositories/sync_note_repository.dart';
 import '../domain/repositories/book_repository.dart';
 import '../domain/repositories/note_repository.dart';
 
@@ -12,16 +14,30 @@ final hiveServiceProvider = Provider<HiveService>((ref) {
   return HiveService();
 });
 
-/// BookRepository 프로바이더
-final bookRepositoryProvider = Provider<BookRepository>((ref) {
-  final hiveService = ref.watch(hiveServiceProvider);
-  return HiveBookRepository(hiveService);
+/// FirebaseService 인스턴스 프로바이더
+final firebaseServiceProvider = Provider<FirebaseService>((ref) {
+  return FirebaseService();
 });
 
-/// NoteRepository 프로바이더
+/// NetworkSyncService 인스턴스 프로바이더
+final networkSyncServiceProvider = Provider<NetworkSyncService>((ref) {
+  return NetworkSyncService();
+});
+
+/// BookRepository 프로바이더 (로컬 우선 + Firebase 실시간 자동 클라우드 백업 + 오프라인 알림)
+final bookRepositoryProvider = Provider<BookRepository>((ref) {
+  final hiveService = ref.watch(hiveServiceProvider);
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  final networkSyncService = ref.watch(networkSyncServiceProvider);
+  return SyncBookRepository(hiveService, firebaseService, networkSyncService);
+});
+
+/// NoteRepository 프로바이더 (로컬 우선 + Firebase 실시간 자동 클라우드 백업 + 오프라인 알림)
 final noteRepositoryProvider = Provider<NoteRepository>((ref) {
   final hiveService = ref.watch(hiveServiceProvider);
-  return HiveNoteRepository(hiveService);
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  final networkSyncService = ref.watch(networkSyncServiceProvider);
+  return SyncNoteRepository(hiveService, firebaseService, networkSyncService);
 });
 
 /// 모든 도서 목록 실시간 감지 스트림 프로바이더
