@@ -27,9 +27,9 @@ class HiveService {
     }
 
     // Book, Note 및 설정 저장을 위한 Box 오픈
-    final bookBox = await Hive.openBox<Book>(AppConstants.bookBoxName);
-    final noteBox = await Hive.openBox<Note>(AppConstants.noteBoxName);
-    final settingsBox = await Hive.openBox(AppConstants.settingsBoxName);
+    await Hive.openBox<Book>(AppConstants.bookBoxName);
+    await Hive.openBox<Note>(AppConstants.noteBoxName);
+    await Hive.openBox(AppConstants.settingsBoxName);
 
 
 
