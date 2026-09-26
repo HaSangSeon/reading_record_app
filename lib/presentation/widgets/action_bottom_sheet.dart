@@ -454,8 +454,8 @@ class ActionBottomSheet {
                       iconBgColor: const Color(
                         0xFF8B5CF6,
                       ).withValues(alpha: 0.15),
-                      title: '감성 문장 카드 공유',
-                      subtitle: '인스타그램/SNS용 고화질 카드로 제작 및 공유',
+                      title: '카드 공유',
+                      subtitle: 'SNS용 이미지 카드로 공유',
                       isDark: isDark,
                       onTap: () {
                         Navigator.pop(ctx);

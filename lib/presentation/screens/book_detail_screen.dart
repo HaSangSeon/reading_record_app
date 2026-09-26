@@ -14,17 +14,30 @@ import '../widgets/custom_confirm_dialog.dart';
 import '../widgets/note_card.dart';
 import '../widgets/note_form_dialog.dart';
 
-class BookDetailScreen extends ConsumerWidget {
+class BookDetailScreen extends ConsumerStatefulWidget {
   final String bookId;
 
   const BookDetailScreen({super.key, required this.bookId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookDetailScreen> createState() => _BookDetailScreenState();
+}
+
+class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bookAsync = ref.watch(singleBookStreamProvider(bookId));
-    final notesAsync = ref.watch(sortedNotesProvider(bookId));
-    final sortOrder = ref.watch(noteSortOrderProvider(bookId));
+    final bookAsync = ref.watch(singleBookStreamProvider(widget.bookId));
+    final notesAsync = ref.watch(sortedNotesProvider(widget.bookId));
+    final sortOrder = ref.watch(noteSortOrderProvider(widget.bookId));
 
     return bookAsync.when(
       data: (book) {
@@ -92,6 +105,7 @@ class BookDetailScreen extends ConsumerWidget {
             ],
           ),
           body: CustomScrollView(
+            controller: _scrollController,
             slivers: [
               // 도서 기본 정보 & 진행률 헤더
               SliverToBoxAdapter(child: _buildBookHeader(context, ref, book)),
@@ -133,10 +147,10 @@ class BookDetailScreen extends ConsumerWidget {
                       TextButton.icon(
                         onPressed: () {
                           final current = ref.read(
-                            noteSortOrderProvider(bookId),
+                            noteSortOrderProvider(widget.bookId),
                           );
                           ref
-                              .read(noteSortOrderProvider(bookId).notifier)
+                              .read(noteSortOrderProvider(widget.bookId).notifier)
                               .state = current == NoteSortOrder.byPage
                               ? NoteSortOrder.byDate
                               : NoteSortOrder.byPage;
@@ -202,7 +216,12 @@ class BookDetailScreen extends ConsumerWidget {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => NoteFormDialog.show(context, book: book),
+            onPressed: () async {
+              final success = await NoteFormDialog.show(context, book: book);
+              if (success == true && mounted) {
+                AppTheme.showPremiumSnackBar(context, '기록이 등록되었습니다.');
+              }
+            },
             icon: const Icon(Icons.edit_rounded),
             label: const Text(
               '기록 남기기',

@@ -29,77 +29,9 @@ class HiveService {
     // Book, Note 및 설정 저장을 위한 Box 오픈
     final bookBox = await Hive.openBox<Book>(AppConstants.bookBoxName);
     final noteBox = await Hive.openBox<Note>(AppConstants.noteBoxName);
-    await Hive.openBox(AppConstants.settingsBoxName);
+    final settingsBox = await Hive.openBox(AppConstants.settingsBoxName);
 
-    // 첫 실행 시 사용자 경험을 위한 샘플 도서 2권 자동 등록
-    if (bookBox.isEmpty) {
-      final now = DateTime.now();
-      final sample1 = Book(
-        id: 'sample-book-1',
-        title: '불편한 편의점',
-        author: '김호연',
-        publisher: '나무옆의자',
-        coverUrl:
-            'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=400',
-        totalPages: 268,
-        readPages: 180,
-        isCompleted: false,
-        rating: 4.5,
-        memo: '지친 일상에 따뜻한 위로와 웃음을 주는 이야기',
-        createdAt: now.subtract(const Duration(days: 5)),
-      );
-      final sample2 = Book(
-        id: 'sample-book-2',
-        title: '클린 아키텍처',
-        author: '로버트 C. 마틴',
-        publisher: '인사이트',
-        coverUrl:
-            'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=400&q=80',
-        totalPages: 350,
-        readPages: 350,
-        isCompleted: true,
-        rating: 5.0,
-        memo: '소프트웨어 구조와 설계의 정수를 담은 명저',
-        createdAt: now.subtract(const Duration(days: 20)),
-        completedAt: now.subtract(const Duration(days: 2)),
-      );
-      await bookBox.put(sample1.id, sample1);
-      await bookBox.put(sample2.id, sample2);
-    }
 
-    // 첫 실행 시 샘플 독서 노트 3개 등록
-    if (noteBox.isEmpty) {
-      final now = DateTime.now();
-      final sampleNote1 = Note(
-        id: 'sample-note-1',
-        bookId: 'sample-book-1',
-        pageNumber: 56,
-        quotation:
-            '결국 삶은 관계였고 관계는 소통이었다. 행복은 멀리 있지 않고 내 옆의 사람들과 마음을 나누는 데 있었다.',
-        content: '독고 씨의 따뜻한 시선과 배려가 기억에 남는 문장. 사소한 친절이 사람을 살린다.',
-        createdAt: now.subtract(const Duration(days: 3, hours: 2)),
-      );
-      final sampleNote2 = Note(
-        id: 'sample-note-2',
-        bookId: 'sample-book-1',
-        pageNumber: 142,
-        quotation:
-            '밥 딜런의 외할머니가 어린 밥 딜런에게 했다는 말이 있다. 행복은 문제가 없는 상태가 아니라 문제를 해결해가는 과정이다.',
-        content: '인생의 고난을 대하는 태도를 다시 생각해보게 되는 명구절.',
-        createdAt: now.subtract(const Duration(days: 1, hours: 5)),
-      );
-      final sampleNote3 = Note(
-        id: 'sample-note-3',
-        bookId: 'sample-book-2',
-        pageNumber: 88,
-        quotation: '소프트웨어 아키텍처의 목표는 필요한 시스템을 만들고 유지보수하는 데 투입되는 인력을 최소화하는 데 있다.',
-        content: '클린 아키텍처의 핵심 철학. 빠른 개발보다 변경에 유연한 구조를 만드는 것이 장기적으로 훨씬 생산적이다.',
-        createdAt: now.subtract(const Duration(days: 10)),
-      );
-      await noteBox.put(sampleNote1.id, sampleNote1);
-      await noteBox.put(sampleNote2.id, sampleNote2);
-      await noteBox.put(sampleNote3.id, sampleNote3);
-    }
 
     _isInitialized = true;
   }

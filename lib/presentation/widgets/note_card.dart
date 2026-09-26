@@ -22,227 +22,242 @@ class NoteCard extends ConsumerWidget {
     final dateFormat = DateFormat('yyyy.MM.dd HH:mm');
     final formattedDate = dateFormat.format(note.createdAt);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-      color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
-      elevation: isDark ? 0 : 0.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(
-          color: isDark ? AppTheme.darkBorder : const Color(0xFFEDF0F5),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: isDark
+            ? [
+                const BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                )
+              ]
+            : [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                )
+              ],
+        border: Border.all(
+          color: isDark ? AppTheme.darkBorder : const Color(0xFFF1F5F9),
           width: 1,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 상단 헤더: 페이지 뱃지, 작성일, 더보기 메뉴
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+            // 상단 헤더 영역
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF161B28) : const Color(0xFFF8FAFC),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2E3B52)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bookmark_rounded,
+                              size: 14,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              note.pageNumber > 0
+                                  ? 'p. ${note.pageNumber}'
+                                  : '전체 기록',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        formattedDate,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppTheme.darkTextLight
+                              : AppTheme.textLight,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
+                    ),
+                    tooltip: '더보기',
+                    onPressed: () {
+                      ActionBottomSheet.showNoteActions(
+                        context,
+                        book: book,
+                        note: note,
+                        onShare: () {
+                          ShareableQuoteCardDialog.show(
+                            context,
+                            book: book,
+                            note: note,
+                          );
+                        },
+                        onEdit: () {
+                          NoteFormDialog.show(context, book: book, note: note);
+                        },
+                        onDelete: () {
+                          _showDeleteConfirm(context, ref);
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // 인상 깊은 구절 영역 (큰 따옴표 디자인 적용)
+            if (note.quotation.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 16, top: 6, bottom: 4),
+                child: Stack(
                   children: [
-                    Container(
+                    Positioned(
+                      top: -10,
+                      left: -2,
+                      child: Icon(
+                        Icons.format_quote_rounded,
+                        size: 56,
+                        color: isDark
+                            ? AppTheme.primaryLight.withValues(alpha: 0.1)
+                            : AppTheme.primaryColor.withValues(alpha: 0.04),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 18, top: 10, bottom: 4),
+                      child: Text(
+                        note.quotation,
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          color: isDark ? AppTheme.darkTextPrimary : const Color(0xFF1E293B),
+                          height: 1.6,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // 사용자의 생각/메모 영역
+            if (note.content.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 6, bottom: 8),
+                child: Text(
+                  note.content,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    color: isDark ? AppTheme.darkTextSecondary : const Color(0xFF475569),
+                    height: 1.65,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+
+            // 하단 액션(공유) 영역
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  InkWell(
+                    onTap: () => ShareableQuoteCardDialog.show(
+                      context,
+                      book: book,
+                      note: note,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            (isDark
-                                    ? AppTheme.primaryLight
-                                    : AppTheme.primaryColor)
-                                .withValues(alpha: isDark ? 0.22 : 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark
+                              ? AppTheme.darkBorder
+                              : const Color(0xFFE2E8F0),
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.bookmark_rounded,
-                            size: 13,
+                            Icons.ios_share_rounded,
+                            size: 14,
                             color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
+                                ? AppTheme.darkTextSecondary
+                                : AppTheme.textSecondary,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Text(
-                            note.pageNumber > 0
-                                ? 'p. ${note.pageNumber}'
-                                : '전체 기록',
+                            '카드 공유',
                             style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                               color: isDark
-                                  ? AppTheme.primaryLight
-                                  : AppTheme.primaryColor,
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      formattedDate,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppTheme.darkTextLight
-                            : AppTheme.textLight,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
                   ),
-                  icon: Icon(
-                    Icons.more_vert_rounded,
-                    size: 18,
-                    color: isDark ? AppTheme.darkTextLight : AppTheme.textLight,
-                  ),
-                  tooltip: '더보기',
-                  onPressed: () {
-                    ActionBottomSheet.showNoteActions(
-                      context,
-                      book: book,
-                      note: note,
-                      onShare: () {
-                        ShareableQuoteCardDialog.show(
-                          context,
-                          book: book,
-                          note: note,
-                        );
-                      },
-                      onEdit: () {
-                        NoteFormDialog.show(context, book: book, note: note);
-                      },
-                      onDelete: () {
-                        _showDeleteConfirm(context, ref);
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-
-            // 인상 깊은 구절 (인용구 스타일 박스)
-            if (note.quotation.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF0F1626)
-                      : const Color(0xFFF6F8FB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border(
-                    left: BorderSide(
-                      color: isDark
-                          ? AppTheme.primaryLight
-                          : AppTheme.primaryColor,
-                      width: 3.5,
-                    ),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '❝ ${note.quotation} ❞',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontStyle: FontStyle.italic,
-                        color: isDark
-                            ? AppTheme.darkTextPrimary
-                            : AppTheme.textPrimary,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            ],
-
-            // 생각 / 메모 본문 (입력된 경우 표시)
-            if (note.content.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                note.content,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark
-                      ? AppTheme.darkTextPrimary
-                      : AppTheme.textPrimary,
-                  height: 1.5,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-
-            // 하단 감성 카드 공유 액션 바
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                InkWell(
-                  onTap: () => ShareableQuoteCardDialog.show(
-                    context,
-                    book: book,
-                    note: note,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          (isDark
-                                  ? AppTheme.primaryLight
-                                  : AppTheme.primaryColor)
-                              .withValues(alpha: isDark ? 0.15 : 0.08),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 13,
-                          color: isDark
-                              ? AppTheme.primaryLight
-                              : AppTheme.primaryColor,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          '카드 공유',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),

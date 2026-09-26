@@ -13,7 +13,7 @@ import 'book_form_dialog.dart';
 class BookSearchDialog extends ConsumerStatefulWidget {
   const BookSearchDialog({super.key});
 
-  static Future<void> show(BuildContext context) {
+  static Future<bool?> show(BuildContext context) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -512,17 +512,8 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
         );
 
     if (context.mounted && success) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('\'${item.title}\' 도서가 내 서재에 등록되었습니다.'),
-          backgroundColor: AppTheme.primaryColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      Navigator.pop(context, true);
+
     }
   }
 

@@ -22,10 +22,12 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -158,8 +160,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
+      floatingActionButton: filteredBooksAsync.maybeWhen(
+        data: (books) {
+          if (books.isEmpty) return null; // 빈 화면일 때는 중앙 버튼을 사용하므로 FAB 숨김
+          return Container(
+            decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isDark
                 ? const [
@@ -229,8 +234,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
-      ),
-      body: Stack(
+      );
+    },
+    orElse: () => const SizedBox.shrink(),
+  ),
+  body: Stack(
         fit: StackFit.expand,
         children: [
           RepaintBoundary(
@@ -239,6 +247,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           filteredBooksAsync.when(
             data: (books) {
               return CustomScrollView(
+                controller: _scrollController,
                 slivers: [
                   // 독서 통계 배너
                   SliverToBoxAdapter(child: StatsHeader(books: books)),
@@ -490,9 +499,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     borderColor: isDark
                         ? primary.withValues(alpha: 0.25)
                         : const Color(0xFFDDD6FE),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(ctx);
-                      BookSearchDialog.show(context);
+                      final success = await BookSearchDialog.show(context);
+                      if (success == true && mounted) {
+                        AppTheme.showPremiumSnackBar(context, '도서가 등록되었습니다.');
+                      }
                     },
                   ),
 
@@ -513,9 +525,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     borderColor: isDark
                         ? AppTheme.accentColor.withValues(alpha: 0.25)
                         : const Color(0xFFFED7AA),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(ctx);
-                      BookFormDialog.show(context);
+                      final success = await BookFormDialog.show(context);
+                      if (success == true && mounted) {
+                        AppTheme.showPremiumSnackBar(context, '도서가 등록되었습니다.');
+                      }
                     },
                   ),
 

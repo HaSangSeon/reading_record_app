@@ -19,7 +19,7 @@ class NoteFormDialog extends ConsumerStatefulWidget {
 
   const NoteFormDialog({super.key, required this.book, this.initialNote});
 
-  static Future<void> show(
+  static Future<bool?> show(
     BuildContext context, {
     required Book book,
     Note? note,
@@ -549,17 +549,8 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
     }
 
     if (mounted && success) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEdit ? '독서 기록이 수정되었습니다.' : '새 독서 기록이 추가되었습니다.'),
-          backgroundColor: AppTheme.primaryColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      Navigator.pop(context, true);
+
 
       // 독서 기록 저장/수정 완료 시 통합 액션 카운터 증가 (기본 4회 완료 시 1회 노출, 3분 쿨타임)
       AdMobService().triggerActionInterstitial();
@@ -745,6 +736,7 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _pageController,
+                          maxLength: 5,
                           keyboardType: TextInputType.number,
                           style: TextStyle(
                             fontSize: 15,
@@ -841,6 +833,7 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _quotationController,
+                          maxLength: 2000,
                           maxLines: 3,
                           style: TextStyle(
                             fontSize: 14.5,
@@ -882,6 +875,7 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _contentController,
+                          maxLength: 2000,
                           maxLines: 4,
                           style: TextStyle(
                             fontSize: 14.5,

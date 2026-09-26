@@ -353,30 +353,49 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
     final formattedDate = dateFormat.format(note.createdAt);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF171A27) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: isDark
+            ? [
+                const BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                )
+              ]
+            : [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                )
+              ],
         border: Border.all(
-          color: isDark ? const Color(0xFF262B3E) : const Color(0xFFEDEEF5),
-          width: 1.0,
+          color: isDark ? AppTheme.darkBorder : const Color(0xFFF1F5F9),
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. 상단 헤더 (책 표지 + 도서명/저자 + 페이지 태그 + 메뉴)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF161B28) : const Color(0xFFF8FAFC),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 미니 책 표지 썸네일 (그림자 효과)
                 GestureDetector(
@@ -527,77 +546,61 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 ),
               ],
             ),
+          ),
 
             // 2. 인상 깊은 구절 (발췌문) 박스 (문학적 감성 레이아웃)
-            if (note.quotation.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1F2437)
-                      : const Color(0xFFF6F4FD),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF333A56)
-                        : const Color(0xFFE8E4F8),
-                    width: 0.8,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
+            if (note.quotation.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 16, top: 6, bottom: 4),
+                child: Stack(
+                children: [
+                  Positioned(
+                    top: -10,
+                    left: -2,
+                    child: Icon(
                       Icons.format_quote_rounded,
-                      size: 20,
+                      size: 56,
                       color: isDark
-                          ? const Color(0xFFA78BFA)
-                          : AppTheme.primaryColor,
+                          ? AppTheme.primaryLight.withValues(alpha: 0.1)
+                          : AppTheme.primaryColor.withValues(alpha: 0.04),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 18, top: 10, bottom: 4),
+                    child: Text(
                       note.quotation,
                       style: TextStyle(
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        color: isDark
-                            ? AppTheme.darkTextPrimary
-                            : const Color(0xFF1E293B),
+                        fontSize: 15.5,
+                        color: isDark ? AppTheme.darkTextPrimary : const Color(0xFF1E293B),
                         height: 1.6,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
 
             // 3. 나의 생각 / 메모 본문
-            if (note.content.isNotEmpty) ...[
-              const SizedBox(height: 12),
+            if (note.content.trim().isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 6, bottom: 8),
                 child: Text(
                   note.content,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: isDark
-                        ? AppTheme.darkTextPrimary
-                        : AppTheme.textPrimary,
-                    height: 1.55,
-                    letterSpacing: -0.2,
+                    fontSize: 14.5,
+                    color: isDark ? AppTheme.darkTextSecondary : const Color(0xFF475569),
+                    height: 1.65,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
-            ],
 
-            const SizedBox(height: 14),
-
-            // 4. 하단 액션 바: 작성일자 & 감성 카드 공유 버튼
-            Row(
+            // 4. 하단 액션 바: 작성일자 & 카드 공유 버튼
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+              child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
@@ -629,52 +632,39 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                     book: book,
                     note: note,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 5,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark
-                            ? [
-                                const Color(0xFF4C3A93).withValues(alpha: 0.3),
-                                const Color(0xFF6B4BC8).withValues(alpha: 0.3),
-                              ]
-                            : [
-                                const Color(0xFFEDE9FE),
-                                const Color(0xFFE0E7FF),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: (isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor)
-                            .withValues(alpha: 0.25),
-                        width: 0.8,
+                        color: isDark
+                            ? AppTheme.darkBorder
+                            : const Color(0xFFE2E8F0),
                       ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 12,
+                          Icons.ios_share_rounded,
+                          size: 14,
                           color: isDark
-                              ? AppTheme.primaryLight
-                              : AppTheme.primaryColor,
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         Text(
-                          "감성 카드 공유",
+                          '카드 공유',
                           style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                             color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
+                                ? AppTheme.darkTextSecondary
+                                : AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -683,6 +673,7 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 ),
               ],
             ),
+          ),
           ],
         ),
       ),

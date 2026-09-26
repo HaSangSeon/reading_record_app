@@ -136,6 +136,31 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
       category: '강렬한 볼드',
       fontBuilder: GoogleFonts.doHyeon,
     ),
+    QuoteCardFont(
+      name: '주아체',
+      category: '동글동글',
+      fontBuilder: GoogleFonts.jua,
+    ),
+    QuoteCardFont(
+      name: '해바라기',
+      category: '정감가는',
+      fontBuilder: GoogleFonts.sunflower,
+    ),
+    QuoteCardFont(
+      name: '연성체',
+      category: '붓글씨',
+      fontBuilder: GoogleFonts.yeonSung,
+    ),
+    QuoteCardFont(
+      name: '싱글데이',
+      category: '발랄한',
+      fontBuilder: GoogleFonts.singleDay,
+    ),
+    QuoteCardFont(
+      name: '검은고딕',
+      category: '타이틀',
+      fontBuilder: GoogleFonts.blackHanSans,
+    ),
   ];
 
   final List<QuoteCardTheme> _themes = [
@@ -211,6 +236,58 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
       quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
       dividerColor: Colors.white.withValues(alpha: 0.15),
     ),
+    // 8. 오션 브리즈 (청량한 바다)
+    QuoteCardTheme(
+      name: '오션',
+      gradientColors: [const Color(0xFF0369A1), const Color(0xFF0EA5E9)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFF7DD3FC),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.15),
+    ),
+    // 9. 블라썸 핑크 (사랑스러운 벚꽃)
+    QuoteCardTheme(
+      name: '블라썸',
+      gradientColors: [const Color(0xFFFDF2F8), const Color(0xFFFCE7F3)],
+      textColor: const Color(0xFF831843),
+      subTextColor: const Color(0xFFBE185D),
+      quoteIconColor: const Color(0xFFF43F5E),
+      quoteBadgeBg: const Color(0xFFFBCFE8),
+      dividerColor: const Color(0xFFF9A8D4),
+      borderColor: const Color(0xFFFBCFE8),
+    ),
+    // 10. 말차 라떼 (따뜻한 그린)
+    QuoteCardTheme(
+      name: '말차',
+      gradientColors: [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
+      textColor: const Color(0xFF064E3B),
+      subTextColor: const Color(0xFF047857),
+      quoteIconColor: const Color(0xFF10B981),
+      quoteBadgeBg: const Color(0xFFD1FAE5),
+      dividerColor: const Color(0xFFA7F3D0),
+      borderColor: const Color(0xFFD1FAE5),
+    ),
+    // 11. 딥 나이트 (신비로운 밤)
+    QuoteCardTheme(
+      name: '나이트',
+      gradientColors: [const Color(0xFF2E1065), const Color(0xFF4C1D95)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFFC084FC),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.15),
+    ),
+    // 12. 모카 브라운 (아늑한 커피)
+    QuoteCardTheme(
+      name: '모카',
+      gradientColors: [const Color(0xFF451A03), const Color(0xFF78350F)],
+      textColor: Colors.white,
+      subTextColor: Colors.white70,
+      quoteIconColor: const Color(0xFFFCD34D),
+      quoteBadgeBg: Colors.white.withValues(alpha: 0.15),
+      dividerColor: Colors.white.withValues(alpha: 0.15),
+    ),
   ];
 
   String get _displayMainText {
@@ -255,29 +332,10 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
       await file.writeAsBytes(pngBytes);
 
       final xFile = XFile(file.path, mimeType: 'image/png');
-      const playStoreUrl =
-          'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
-
-      final shareText = StringBuffer()
-        ..writeln('“$_displayMainText”');
-
-      if (_displaySubMemo != null) {
-        shareText
-          ..writeln()
-          ..writeln('💭 나의 생각: $_displaySubMemo');
-      }
-
-      shareText
-        ..writeln('- 《${widget.book.title}》 (${widget.book.author})')
-        ..writeln()
-        ..writeln('✨ 나만의 인생 문장을 기록하고 감성 카드로 공유해보세요.')
-        ..write('📱 독서한줄 앱 다운로드: $playStoreUrl');
 
       await SharePlus.instance.share(
         ShareParams(
           files: [xFile],
-          subject: '독서한줄 - ${widget.book.title}',
-          text: shareText.toString(),
         ),
       );
 

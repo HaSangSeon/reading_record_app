@@ -27,7 +27,7 @@ class BookFormDialog extends ConsumerStatefulWidget {
     this.initialTotalPages,
   });
 
-  static Future<void> show(
+  static Future<bool?> show(
     BuildContext context, {
     Book? book,
     String? title,
@@ -250,14 +250,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     }
 
     if (mounted && success) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEdit ? '도서 정보가 수정되었습니다.' : '새 도서가 등록되었습니다! 📚'),
-          backgroundColor: AppTheme.successColor,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      Navigator.pop(context, true);
+
 
       // 도서 등록/수정 완료 시 통합 액션 카운터 증가 (기본 4회 완료 시 1회 노출, 3분 쿨타임)
       AdMobService().triggerActionInterstitial();
@@ -487,6 +481,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     // 도서 제목 (필수)
                     TextFormField(
                       controller: _titleController,
+                      maxLength: 100,
                       decoration: InputDecoration(
                         labelText: '책 제목 *',
                         hintText: '예: 불편한 편의점',
@@ -508,6 +503,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                         Expanded(
                           child: TextFormField(
                             controller: _authorController,
+                            maxLength: 50,
                             decoration: InputDecoration(
                               labelText: '저자 *',
                               hintText: '김호연',
@@ -528,6 +524,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                         Expanded(
                           child: TextFormField(
                             controller: _publisherController,
+                            maxLength: 50,
                             decoration: InputDecoration(
                               labelText: '출판사',
                               hintText: '나무옆의자',
@@ -546,6 +543,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     // 표지 이미지 URL & 사진 촬영/갤러리 선택
                     TextFormField(
                       controller: _coverUrlController,
+                      maxLength: 1000,
                       decoration: InputDecoration(
                         labelText: '표지 이미지 (URL 또는 사진 선택)',
                         hintText: 'https://... 또는 우측 버튼으로 사진 선택',
@@ -635,6 +633,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     // 한 줄 메모
                     TextFormField(
                       controller: _memoController,
+                      maxLength: 500,
                       maxLines: 2,
                       decoration: InputDecoration(
                         labelText: '한 줄 평 / 메모',

@@ -250,4 +250,50 @@ class AppTheme {
       ),
     );
   }
+
+  /// 고급스럽고 깔끔한 플로팅 스낵바
+  static void showPremiumSnackBar(
+    BuildContext context,
+    String message, {
+    IconData icon = Icons.check_circle_rounded,
+    bool isSuccess = true,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                icon,
+                color: isSuccess
+                    ? (isDark ? successColor : Colors.white)
+                    : (isDark ? Colors.redAccent : Colors.white),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color: isDark ? darkTextPrimary : Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: isDark ? const Color(0xFF1E293B) : primaryColor, // 슬레이트 다크 / 인디고 프라이머리
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          elevation: 8,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
 }
