@@ -285,6 +285,18 @@ class FirebaseService {
     }
   }
 
+  /// 클라우드와 로컬 간 수동 동기화 실행 (당겨서 새로고침 / 새로고침 버튼용)
+  Future<bool> syncWithCloud(HiveService hiveService) async {
+    if (!_isInitialized || currentUserId == null) return false;
+    try {
+      await initialSyncWithHive(hiveService);
+      return true;
+    } catch (e) {
+      developer.log('Manual sync error: $e', name: 'FirebaseService');
+      return false;
+    }
+  }
+
   /// 오프라인이었다가 온라인으로 복귀했을 때 로컬 전체를 클라우드로 안전 재동기화
   Future<void> syncAllLocalToCloud(HiveService hiveService) async {
     if (!_isInitialized || currentUserId == null) return;

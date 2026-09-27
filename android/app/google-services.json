@@ -12,7 +12,28 @@
           "package_name": "com.hasangseon.reading_record_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1067204910332-n1ogq24c0prn08fflkuhpoa3ju8b7rmc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hasangseon.reading_record_app",
+            "certificate_hash": "f744d912d1cbeea6b983658120ff4c1e865769d3"
+          }
+        },
+        {
+          "client_id": "1067204910332-sgfas0mcsupm24vg40rgdafan5f5v0vv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hasangseon.reading_record_app",
+            "certificate_hash": "debd6fd7befcad67205fc557bac9de0dd0bc5f2f"
+          }
+        },
+        {
+          "client_id": "1067204910332-ei51ktn1r7qsusohepv9mo2v08l6jq64.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCyIYphgk9mde1uIIK-TnSCLFml2C1USWc"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1067204910332-ei51ktn1r7qsusohepv9mo2v08l6jq64.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1067204910332-a874fe7dt0kcdmk9pcvfka8tl0er1oh2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.hasangseon.readingRecordApp"
+              }
+            }
+          ]
         }
       }
     }

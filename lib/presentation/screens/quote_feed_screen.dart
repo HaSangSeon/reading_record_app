@@ -23,6 +23,7 @@ class QuoteFeedScreen extends ConsumerStatefulWidget {
 
 class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
   bool _isSearching = false;
+  bool _isSyncing = false;
   late TextEditingController _searchController;
 
   @override
@@ -35,6 +36,56 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      final hiveService = ref.read(hiveServiceProvider);
+      final firebaseService = ref.read(firebaseServiceProvider);
+      final success = await firebaseService.syncWithCloud(hiveService);
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    success
+                        ? '클라우드와 최신 데이터로 동기화되었습니다.'
+                        : '동기화 중 오류가 발생했습니다.',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor:
+                success ? const Color(0xFF10B981) : Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
   }
 
   @override
@@ -136,6 +187,26 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 ],
               ),
         actions: [
+          // 클라우드 동기화 (새로고침) 버튼 - 맨 왼쪽
+          IconButton(
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.primaryColor,
+                    ),
+                  )
+                : Icon(
+                    Icons.sync_rounded,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
+            tooltip: '클라우드 동기화',
+            onPressed: _isSyncing ? null : _syncData,
+          ),
           IconButton(
             icon: Icon(
               _isSearching ? Icons.close_rounded : Icons.search_rounded,
@@ -171,14 +242,20 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
       ),
       body: Column(
         children: [
-          // 도서별 수평 필터 칩 바 (고급스러운 캡슐형)
+          // 도서별 수평 필터 칩 바 (프리미엄 캡슐형 + 미니 썸네일 + 개수 배지)
           allBooksAsync.when(
             data: (books) {
               if (books.isEmpty) return const SizedBox.shrink();
+              final allNotes = allNotesAsync.value ?? [];
+              final totalNotesCount = allNotes.length;
+
               return Container(
-                height: 52,
+                height: 56,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF0F121E).withValues(alpha: 0.95)
+                      : Colors.white.withValues(alpha: 0.95),
                   border: Border(
                     bottom: BorderSide(
                       color: isDark
@@ -190,6 +267,7 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 ),
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: books.length + 1,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -197,9 +275,11 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                     if (index == 0) {
                       final isSelected = selectedBookId == null;
                       return _buildFilterChip(
-                        label: "전체 보기",
+                        label: "전체 기록",
                         isSelected: isSelected,
                         isDark: isDark,
+                        icon: Icons.auto_stories_rounded,
+                        count: totalNotesCount,
                         onTap: () {
                           ref.read(quoteFeedSelectedBookIdProvider.notifier).state = null;
                         },
@@ -208,10 +288,15 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
 
                     final book = books[index - 1];
                     final isSelected = selectedBookId == book.id;
+                    final bookNotesCount =
+                        allNotes.where((item) => item.book.id == book.id).length;
+
                     return _buildFilterChip(
                       label: book.title,
                       isSelected: isSelected,
                       isDark: isDark,
+                      coverUrl: book.coverUrl,
+                      count: bookNotesCount,
                       onTap: () {
                         ref.read(quoteFeedSelectedBookIdProvider.notifier).state =
                             isSelected ? null : book.id;
@@ -225,32 +310,53 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
             error: (_, _) => const SizedBox.shrink(),
           ),
 
-          // 피드 본문 리스트
+          // 피드 본문 리스트 (당겨서 새로고침 지원)
           Expanded(
             child: feedAsync.when(
               data: (items) {
                 if (items.isEmpty) {
-                  return _buildEmptyState(context, isDark);
+                  return RefreshIndicator(
+                    color: AppTheme.primaryColor,
+                    backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+                    onRefresh: _syncData,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: _buildEmptyState(context, isDark),
+                      ),
+                    ),
+                  );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.only(
-                    top: 14,
-                    left: 16,
-                    right: 16,
-                    bottom: 110, // 하단 AdMob 배너 및 탭바 높이 대응
+                return RefreshIndicator(
+                  color: AppTheme.primaryColor,
+                  backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+                  onRefresh: _syncData,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.only(
+                      top: 14,
+                      left: 16,
+                      right: 16,
+                      bottom: 110, // 하단 AdMob 배너 및 탭바 높이 대응
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return _buildFeedCard(
+                        context,
+                        ref,
+                        item.book,
+                        item.note,
+                        isDark,
+                      );
+                    },
                   ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _buildFeedCard(
-                      context,
-                      ref,
-                      item.book,
-                      item.note,
-                      isDark,
-                    );
-                  },
                 );
               },
               loading: () => Center(
@@ -273,68 +379,162 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
     );
   }
 
-  // ── 수평 필터 칩 빌더 ──
+  // ── 수평 필터 칩 빌더 (프리미엄 캡슐형 + 미니 북커버 + 카운트 배지) ──
   Widget _buildFilterChip({
     required String label,
     required bool isSelected,
     required bool isDark,
     required VoidCallback onTap,
+    IconData? icon,
+    String? coverUrl,
+    int? count,
   }) {
     final activeGradient = LinearGradient(
       colors: isDark
-          ? [const Color(0xFF4C3A93), const Color(0xFF634BB5)]
-          : [AppTheme.primaryColor, const Color(0xFF6B4BC8)],
+          ? const [Color(0xFF5B45B2), Color(0xFF433096)]
+          : const [Color(0xFF6366F1), Color(0xFF4F46E5)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          gradient: isSelected ? activeGradient : null,
-          color: isSelected
-              ? null
-              : (isDark ? const Color(0xFF181B28) : Colors.white),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: primary.withValues(alpha: 0.15),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: isSelected ? activeGradient : null,
             color: isSelected
-                ? Colors.transparent
-                : (isDark ? const Color(0xFF262B3E) : const Color(0xFFE2E4EE)),
-            width: 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF4C3A93).withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [
-                  if (!isDark)
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ? null
+                : (isDark ? const Color(0xFF161926) : Colors.white),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
               color: isSelected
-                  ? Colors.white
-                  : (isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
+                  ? const Color(0xFF818CF8).withValues(alpha: 0.6)
+                  : (isDark ? const Color(0xFF262C40) : const Color(0xFFE2E4EE)),
+              width: isSelected ? 1.2 : 0.9,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. 도서 썸네일 또는 아이콘
+              if (coverUrl != null && coverUrl.isNotEmpty)
+                Container(
+                  width: 16,
+                  height: 22,
+                  margin: const EdgeInsets.only(right: 7),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: coverUrl.startsWith('http')
+                        ? Image.network(
+                            coverUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.book_rounded,
+                              size: 13,
+                              color: isSelected ? Colors.white70 : primary,
+                            ),
+                          )
+                        : Image.file(
+                            File(coverUrl),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.book_rounded,
+                              size: 13,
+                              color: isSelected ? Colors.white70 : primary,
+                            ),
+                          ),
+                  ),
+                )
+              else if (icon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Icon(
+                    icon,
+                    size: 15,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor),
+                  ),
+                ),
+
+              // 2. 도서명 / 텍스트
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 130),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    letterSpacing: -0.3,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary),
+                  ),
+                ),
+              ),
+
+              // 3. 기록 개수 배지
+              if (count != null && count > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.24)
+                        : (isDark
+                            ? AppTheme.primaryLight.withValues(alpha: 0.15)
+                            : AppTheme.primaryColor.withValues(alpha: 0.08)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? AppTheme.primaryLight : AppTheme.primaryColor),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -626,48 +826,59 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                     ),
                   ],
                 ),
-                InkWell(
-                  onTap: () => ShareableQuoteCardDialog.show(
-                    context,
-                    book: book,
-                    note: note,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => ShareableQuoteCardDialog.show(
+                      context,
+                      book: book,
+                      note: note,
                     ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: isDark
-                            ? AppTheme.darkBorder
-                            : const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.ios_share_rounded,
-                          size: 14,
-                          color: isDark
-                              ? AppTheme.darkTextSecondary
-                              : AppTheme.textSecondary,
+                      decoration: BoxDecoration(
+                        color: (isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor)
+                            .withValues(alpha: isDark ? 0.18 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor)
+                              .withValues(alpha: isDark ? 0.35 : 0.22),
+                          width: 0.8,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '카드 공유',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.ios_share_rounded,
+                            size: 13,
                             color: isDark
-                                ? AppTheme.darkTextSecondary
-                                : AppTheme.textSecondary,
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 5),
+                          Text(
+                            '카드 공유',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                              color: isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -302,18 +302,59 @@ class SettingsBackupScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                       if (isLinked)
-                        OutlinedButton(
-                          onPressed: () => _handleUnlink(context, ref),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.redAccent,
-                            side: const BorderSide(color: Color(0xFFFCA5A5)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            visualDensity: VisualDensity.compact,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () => _handleManualSync(context, ref),
+                              icon: const Icon(Icons.sync_rounded, size: 14),
+                              label: const Text(
+                                '지금 동기화',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 7,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
                             ),
-                          ),
-                          child: const Text('연동 해제', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 6),
+                            OutlinedButton(
+                              onPressed: () => _handleUnlink(context, ref),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.redAccent,
+                                side: const BorderSide(
+                                  color: Color(0xFFFCA5A5),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                '연동 해제',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         )
                       else
                         ElevatedButton.icon(
@@ -1046,6 +1087,66 @@ class SettingsBackupScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// 수동 클라우드 동기화 처리
+  Future<void> _handleManualSync(BuildContext context, WidgetRef ref) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final hiveService = ref.read(hiveServiceProvider);
+      final firebaseService = ref.read(firebaseServiceProvider);
+      final success = await firebaseService.syncWithCloud(hiveService);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // pop loading
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    success
+                        ? '클라우드와 최신 데이터로 동기화되었습니다.'
+                        : '동기화 중 오류가 발생했습니다.',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor:
+                success ? const Color(0xFF10B981) : Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // pop loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('동기화 실패: $e')),
+        );
+      }
+    }
   }
 
   /// 구글 계정 연동 처리

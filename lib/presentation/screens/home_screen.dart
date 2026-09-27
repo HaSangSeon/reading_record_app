@@ -21,8 +21,59 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isSearching = false;
+  bool _isSyncing = false;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      final hiveService = ref.read(hiveServiceProvider);
+      final firebaseService = ref.read(firebaseServiceProvider);
+      final success = await firebaseService.syncWithCloud(hiveService);
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    success
+                        ? '클라우드와 최신 데이터로 동기화되었습니다.'
+                        : '동기화 중 오류가 발생했습니다.',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor:
+                success ? const Color(0xFF10B981) : Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -129,6 +180,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
         actions: [
+          // 클라우드 동기화 (새로고침) 버튼
+          IconButton(
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.primaryColor,
+                    ),
+                  )
+                : Icon(
+                    Icons.sync_rounded,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
+            tooltip: '클라우드 동기화',
+            onPressed: _isSyncing ? null : _syncData,
+          ),
           // 내 서재 내 검색 버튼
           IconButton(
             icon: Icon(
@@ -246,48 +317,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           filteredBooksAsync.when(
             data: (books) {
-              return CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  // 독서 통계 배너
-                  SliverToBoxAdapter(child: StatsHeader(books: books)),
-
-                  // 프리미엄 일체형 세그먼트 필터 바 (전체 / 읽는 중 / 완독)
-                  SliverToBoxAdapter(
-                    child: _buildSegmentedFilterBar(
-                      context,
-                      ref,
-                      currentFilter: currentFilter,
-                      allBooks: allBooksAsync.value ?? [],
-                      isDark: isDark,
-                    ),
+              return RefreshIndicator(
+                color: AppTheme.primaryColor,
+                backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+                onRefresh: _syncData,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
+                  slivers: [
+                    // 독서 통계 배너
+                    SliverToBoxAdapter(child: StatsHeader(books: books)),
 
-                  // 도서 목록 그리드/리스트
-                  if (books.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _buildEmptyState(context),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        top: 8,
-                        bottom: 90,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final book = books[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: BookCard(book: book),
-                          );
-                        }, childCount: books.length),
+                    // 프리미엄 일체형 세그먼트 필터 바 (전체 / 읽는 중 / 완독)
+                    SliverToBoxAdapter(
+                      child: _buildSegmentedFilterBar(
+                        context,
+                        ref,
+                        currentFilter: currentFilter,
+                        allBooks: allBooksAsync.value ?? [],
+                        isDark: isDark,
                       ),
                     ),
-                ],
+
+                    // 도서 목록 그리드/리스트
+                    if (books.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildEmptyState(context),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 8,
+                          bottom: 90,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((context, index) {
+                            final book = books[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: BookCard(book: book),
+                            );
+                          }, childCount: books.length),
+                        ),
+                      ),
+                  ],
+                ),
               );
             },
             loading: () => const Center(

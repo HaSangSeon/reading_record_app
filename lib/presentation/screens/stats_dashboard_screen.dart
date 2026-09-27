@@ -42,10 +42,63 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
     _animCtrl.forward();
   }
 
+  bool _isSyncing = false;
+
   @override
   void dispose() {
     _animCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      final hiveService = ref.read(hiveServiceProvider);
+      final firebaseService = ref.read(firebaseServiceProvider);
+      final success = await firebaseService.syncWithCloud(hiveService);
+      if (mounted) {
+        _animCtrl.forward(from: 0.0);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    success
+                        ? '클라우드와 최신 데이터로 동기화되었습니다.'
+                        : '동기화 중 오류가 발생했습니다.',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor:
+                success ? const Color(0xFF10B981) : Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
   }
 
   @override
@@ -78,6 +131,26 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
           ],
         ),
         actions: [
+          // 클라우드 동기화 (새로고침) 버튼
+          IconButton(
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.primaryColor,
+                    ),
+                  )
+                : Icon(
+                    Icons.sync_rounded,
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
+            tooltip: "클라우드 동기화",
+            onPressed: _isSyncing ? null : _syncData,
+          ),
           IconButton(
             icon: Icon(
               isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
@@ -152,22 +225,29 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
               ratedBooks.length
         : 0.0;
 
-    return AnimatedBuilder(
-      animation: _animCtrl,
-      builder: (context, child) {
-        return FadeTransition(
-          opacity: _fadeAnim,
-          child: Transform.translate(
-            offset: Offset(0, _slideAnim.value),
-            child: child,
+    return RefreshIndicator(
+      color: AppTheme.primaryColor,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      onRefresh: _syncData,
+      child: AnimatedBuilder(
+        animation: _animCtrl,
+        builder: (context, child) {
+          return FadeTransition(
+            opacity: _fadeAnim,
+            child: Transform.translate(
+              offset: Offset(0, _slideAnim.value),
+              child: child,
+            ),
+          );
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
-        );
-      },
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // 1. 핵심 요약 Hero 배너
             _buildHeroInsightBanner(
               totalBooks: totalBooks,
@@ -214,51 +294,69 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ── 빈 상태 화면 ──
   Widget _buildEmptyState(bool isDark) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.bar_chart_rounded,
-                size: 52,
-                color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+    return RefreshIndicator(
+      color: AppTheme.primaryColor,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      onRefresh: _syncData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.bar_chart_rounded,
+                      size: 52,
+                      color: isDark
+                          ? AppTheme.primaryLight
+                          : AppTheme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "등록된 도서가 아직 없습니다",
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "책을 등록하고 독서 노트를 남기면\n다양한 분석 리포트가 완성됩니다.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              "등록된 도서가 아직 없습니다",
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "책을 등록하고 독서 노트를 남기면\n다양한 분석 리포트가 완성됩니다.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.5,
-                color: isDark
-                    ? AppTheme.darkTextSecondary
-                    : AppTheme.textSecondary,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
