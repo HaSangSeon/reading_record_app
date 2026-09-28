@@ -39,8 +39,9 @@ class CustomConfirmDialog {
           ),
           child: Material(
             color: Colors.transparent,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
               children: [
                 // 1. 상단 아이콘 뱃지
                 Container(
@@ -204,6 +205,7 @@ class CustomConfirmDialog {
                 ),
               ],
             ),
+              ),
           ),
         ),
       ),

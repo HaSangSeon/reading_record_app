@@ -18,6 +18,7 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="ocr" />
+        <!-- 카카오 공유 후 돌아오기 위한 설정 -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -40,7 +41,16 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
+            <!-- 카카오링크 실행을 위한 Intent Filter -->
+            <intent-filter android:label="flutter_web_auth">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kakao1a4bc2f8ba5c4e6a7680d49d54201036" android:host="kakaolink" />
+            </intent-filter>
         </activity>
+
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"

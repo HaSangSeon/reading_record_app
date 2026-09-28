@@ -9,6 +9,7 @@ import 'core/services/network_sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/controllers/theme_controller.dart';
 import 'presentation/screens/main_navigation_screen.dart';
+import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
@@ -43,6 +44,11 @@ void main() async {
 
   // 6. Google AdMob 초기화
   await AdMobService().init();
+
+  // 7. 카카오 SDK 초기화
+  KakaoSdk.init(
+    nativeAppKey: '1a4bc2f8ba5c4e6a7680d49d54201036', 
+  );
 
   runApp(const ProviderScope(child: ReadingRecordApp()));
 }

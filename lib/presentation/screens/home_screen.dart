@@ -581,7 +581,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onTap: () async {
                       Navigator.pop(ctx);
                       final success = await BookSearchDialog.show(context);
-                      if (success == true && mounted) {
+                      if (success == true && context.mounted) {
                         AppTheme.showPremiumSnackBar(context, '도서가 등록되었습니다.');
                       }
                     },
@@ -607,7 +607,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onTap: () async {
                       Navigator.pop(ctx);
                       final success = await BookFormDialog.show(context);
-                      if (success == true && mounted) {
+                      if (success == true && context.mounted) {
                         AppTheme.showPremiumSnackBar(context, '도서가 등록되었습니다.');
                       }
                     },

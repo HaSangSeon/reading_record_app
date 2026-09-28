@@ -218,7 +218,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () async {
               final success = await NoteFormDialog.show(context, book: book);
-              if (success == true && mounted) {
+              if (success == true && context.mounted) {
                 AppTheme.showPremiumSnackBar(context, '기록이 등록되었습니다.');
               }
             },
@@ -663,23 +663,6 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                 color: isDark
                     ? AppTheme.darkTextSecondary
                     : AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => NoteFormDialog.show(context, book: book),
-              icon: const Icon(Icons.edit_rounded, size: 16),
-              label: const Text('첫 기록 작성하기'),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                side: BorderSide(
-                  color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-                ),
-                foregroundColor: isDark
-                    ? AppTheme.primaryLight
-                    : AppTheme.primaryColor,
               ),
             ),
           ],

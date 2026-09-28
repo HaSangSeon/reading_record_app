@@ -43,8 +43,9 @@ class ActionBottomSheet {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
             children: [
               // 1. 상단 전용 헤더 배너 (배경색 구분 + 드래그 핸들 + 도서 요약 정보)
               Container(
@@ -290,6 +291,7 @@ class ActionBottomSheet {
                 ),
               ),
             ],
+          ),
           ),
         ),
         );

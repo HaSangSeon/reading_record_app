@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/ads/admob_service.dart';
+import '../../core/services/kakao_share_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
@@ -85,10 +86,13 @@ class ShareableQuoteCardDialog extends StatefulWidget {
 
 class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
   final GlobalKey _cardKey = GlobalKey();
-  bool _isSharing = false;
+  bool _isSharingKakao = false;
+  bool _isSharingOther = false;
+  bool _isCapturing = false;
   int _selectedThemeIndex = 0;
   int _selectedFontIndex = 0;
   bool _includeMemo = true; // 구절만 vs 구절+메모 토글 상태
+  double _fontSizeScale = 1.0; // 텍스트 크기 조절 배율 (0.5 ~ 1.5)
 
   bool get _hasQuotation => widget.note.quotation.trim().isNotEmpty;
   bool get _hasMemo => widget.note.content.trim().isNotEmpty;
@@ -311,9 +315,68 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
     return null;
   }
 
+  Future<void> _shareViaKakao() async {
+    if (_isSharingKakao || _isSharingOther) return;
+    setState(() {
+      _isSharingKakao = true;
+      _isCapturing = true;
+    });
+
+    // 화면이 사각형 테두리로 렌더링되도록 잠시 대기
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    try {
+      final boundary =
+          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+
+      final pngBytes = byteData.buffer.asUint8List();
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/독서한줄_문장_카카오_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await file.writeAsBytes(pngBytes);
+
+      // 카카오톡 이미지 업로드 및 공유 실행
+      await KakaoShareService().shareLocalImageCard(
+        imageFile: file,
+        text: _displayMainText,
+      );
+
+      // 소셜 카드 공유 완료 시 통합 액션 카운터 증가
+      AdMobService().triggerActionInterstitial();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('카카오톡 공유 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharingKakao = false;
+          _isCapturing = false;
+        });
+      }
+    }
+  }
+
   Future<void> _captureAndShare() async {
-    if (_isSharing) return;
-    setState(() => _isSharing = true);
+    if (_isSharingKakao || _isSharingOther) return;
+    setState(() {
+      _isSharingOther = true;
+      _isCapturing = true;
+    });
+
+    // 화면이 사각형 테두리로 렌더링되도록 잠시 대기
+    await Future.delayed(const Duration(milliseconds: 50));
 
     try {
       final boundary =
@@ -352,8 +415,38 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isSharing = false);
+        setState(() {
+          _isSharingOther = false;
+          _isCapturing = false;
+        });
       }
+    }
+  }
+
+  Future<void> _copyTextToClipboard() async {
+    const playStoreUrl =
+        'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
+    final copyBuffer = StringBuffer()..writeln('“$_displayMainText”');
+    if (_displaySubMemo != null) {
+      copyBuffer
+        ..writeln()
+        ..writeln('💭 나의 생각: $_displaySubMemo');
+    }
+    copyBuffer
+      ..writeln('- 《${widget.book.title}》 (${widget.book.author})')
+      ..writeln()
+      ..write('📱 독서한줄 앱 다운로드: $playStoreUrl');
+
+    await Clipboard.setData(
+      ClipboardData(text: copyBuffer.toString()),
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('문장과 앱 링크가 클립보드에 복사되었습니다. 📋'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -368,19 +461,22 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
 
     final isQuoteOnly = _displaySubMemo == null;
     // 구절만 있을 때는 명문장 느낌을 살려 글씨 크기를 키우고, 메모가 있을 때는 균형감 있게 배치
-    final double mainFontSize = currentFont.name == '나눔손글씨'
+    final double mainFontSize = (currentFont.name == '나눔손글씨'
         ? (isQuoteOnly ? 23.0 : 19.5)
-        : (isQuoteOnly ? 18.0 : 16.0);
-    final double subFontSize = currentFont.name == '나눔손글씨' ? 15.0 : 12.5;
+        : (isQuoteOnly ? 18.0 : 16.0)) * _fontSizeScale;
+    final double subFontSize = (currentFont.name == '나눔손글씨' ? 15.0 : 12.5) * _fontSizeScale;
 
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161C24) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
           // 1. 프리미엄 상단 헤더 영역
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 14, 16),
@@ -483,6 +579,27 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                         ],
                       ),
                     ),
+                    // 복사 버튼
+                    IconButton(
+                      onPressed: _copyTextToClipboard,
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.05),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.copy_rounded,
+                          size: 16,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
                     // 닫기 버튼
                     IconButton(
                       onPressed: () => Navigator.pop(context),
@@ -536,22 +653,22 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(24),
-                            border: currentTheme.borderColor != null
-                                ? Border.all(
-                                    color: currentTheme.borderColor!,
-                                    width: 1.2,
-                                  )
-                                : null,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: isDark ? 0.35 : 0.12,
-                                ),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                            borderRadius: _isCapturing ? BorderRadius.zero : BorderRadius.circular(24),
+                            border: Border.all(
+                              color: currentTheme.borderColor ?? Colors.transparent,
+                              width: 1.2,
+                            ),
+                            boxShadow: _isCapturing
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: isDark ? 0.35 : 0.12,
+                                      ),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,8 +715,10 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
 
                               // 중앙 문장 및 감상 메모 (선택된 서체 실시간 적용)
                               Expanded(
-                                child: Center(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
                                   child: SingleChildScrollView(
+                                    physics: const NeverScrollableScrollPhysics(), // 캡처 시 잘리는 부분을 미리보기 위해 스크롤 비활성화
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       crossAxisAlignment:
@@ -1093,64 +1212,87 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                     ),
                   ),
 
+                  const SizedBox(height: 18),
+
+                  // 3) 폰트 크기 조절 슬라이더
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.format_size_rounded,
+                        size: 16,
+                        color: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '글자 크기',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: _fontSizeScale,
+                          min: 0.5,
+                          max: 1.3,
+                          divisions: 16,
+                          activeColor: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                          inactiveColor: isDark ? Colors.white12 : Colors.black12,
+                          onChanged: (value) {
+                            setState(() {
+                              _fontSizeScale = value;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 22),
 
-                  // 하단 버튼 영역 (문장 복사 & 이미지 카드 공유)
+                  // 하단 버튼 영역 (카카오톡 공유 & 기타 공유)
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            const playStoreUrl =
-                                'https://play.google.com/store/apps/details?id=com.hasangseon.reading_record_app';
-                            final copyBuffer = StringBuffer()
-                              ..writeln('“$_displayMainText”');
-                            if (_displaySubMemo != null) {
-                              copyBuffer
-                                ..writeln()
-                                ..writeln('💭 나의 생각: $_displaySubMemo');
-                            }
-                            copyBuffer
-                              ..writeln('- 《${book.title}》 (${book.author})')
-                              ..writeln()
-                              ..write('📱 독서한줄 앱 다운로드: $playStoreUrl');
-
-                            await Clipboard.setData(
-                              ClipboardData(text: copyBuffer.toString()),
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('문장과 앱 링크가 클립보드에 복사되었습니다. 📋'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.copy_rounded, size: 16),
-                          label: const Text('문장 복사'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: isDark
-                                ? AppTheme.darkTextPrimary
-                                : AppTheme.textPrimary,
+                        flex: 1,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSharingKakao ? null : _shareViaKakao,
+                          icon: _isSharingKakao
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black54,
+                                  ),
+                                )
+                              : const Icon(Icons.chat_bubble_rounded, size: 16),
+                          label: Text(
+                            _isSharingKakao ? '생성 중...' : '카카오톡',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFEE500),
+                            foregroundColor: Colors.black87,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF334155)
-                                  : const Color(0xFFCBD5E1),
-                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
+                            elevation: 0,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        flex: 2,
+                        flex: 1,
                         child: ElevatedButton.icon(
-                          onPressed: _isSharing ? null : _captureAndShare,
-                          icon: _isSharing
+                          onPressed: _isSharingOther ? null : _captureAndShare,
+                          icon: _isSharingOther
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
@@ -1159,10 +1301,10 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Icon(Icons.share_rounded, size: 18),
+                              : const Icon(Icons.share_rounded, size: 16),
                           label: Text(
-                            _isSharing ? '고화질 카드 생성 중...' : '이미지 공유하기',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            _isSharingOther ? '생성 중...' : '기타 공유',
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4F46E5),
@@ -1182,6 +1324,8 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

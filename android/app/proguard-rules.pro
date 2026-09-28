@@ -50,3 +50,7 @@
 # uCrop
 -keep class com.yalantis.ucrop.** { *; }
 -dontwarn com.yalantis.ucrop.**
+
+# Kakao SDK
+-keep class com.kakao.sdk.** { *; }
+-dontwarn com.kakao.sdk.**
