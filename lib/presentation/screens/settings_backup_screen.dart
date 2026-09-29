@@ -253,128 +253,126 @@ class SettingsBackupScreen extends ConsumerWidget {
                       color: isDark ? const Color(0xFF26303B) : const Color(0xFFE2E8F0),
                     ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 7,
-                                  height: 7,
-                                  decoration: BoxDecoration(
-                                    color: isLinked
-                                        ? AppTheme.successColor
-                                        : (isDark ? Colors.grey[500] : Colors.grey[600]),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  isLinked ? '클라우드 동기화 켜짐' : '현재 스마트폰에만 저장 중',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isLinked
-                                        ? AppTheme.successColor
-                                        : (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary),
-                                  ),
-                                ),
-                              ],
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: isLinked
+                                  ? AppTheme.successColor
+                                  : (isDark ? Colors.grey[500] : Colors.grey[600]),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isLinked
-                                  ? '$email\n다른 기기(태블릿 등)와 실시간 자동 동기화됩니다.'
-                                  : '기기 변경이나 앱 삭제 시 데이터 복원을 위해 Google 계정을 연결해 보세요.',
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              isLinked ? '클라우드 동기화 켜짐' : '현재 스마트폰에만 저장 중',
                               style: TextStyle(
-                                fontSize: 11.5,
-                                height: 1.35,
-                                color: isDark
-                                    ? AppTheme.darkTextSecondary
-                                    : AppTheme.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isLinked
+                                    ? AppTheme.successColor
+                                    : (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary),
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isLinked
+                            ? '$email\n다른 기기(태블릿 등)와 실시간 자동 동기화됩니다.'
+                            : '기기 변경이나 앱 삭제 시 데이터 복원을 위해 Google 계정을 연결해 보세요.',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      if (isLinked)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () => _handleManualSync(context, ref),
-                              icon: const Icon(Icons.sync_rounded, size: 14),
-                              label: const Text(
-                                '지금 동기화',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.bold,
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: isLinked
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () => _handleManualSync(context, ref),
+                                    icon: const Icon(Icons.sync_rounded, size: 14),
+                                    label: const Text(
+                                      '지금 동기화',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 7,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  OutlinedButton(
+                                    onPressed: () => _handleUnlink(context, ref),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.redAccent,
+                                      side: const BorderSide(
+                                        color: Color(0xFFFCA5A5),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 6,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      '연동 해제',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ElevatedButton.icon(
+                                onPressed: () => _handleGoogleLink(context, ref),
+                                icon: const Icon(Icons.account_circle_outlined, size: 16),
+                                label: const Text(
+                                  'Google 로그인',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                  visualDensity: VisualDensity.compact,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  elevation: 0,
                                 ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 7,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            OutlinedButton(
-                              onPressed: () => _handleUnlink(context, ref),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.redAccent,
-                                side: const BorderSide(
-                                  color: Color(0xFFFCA5A5),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                '연동 해제',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        ElevatedButton.icon(
-                          onPressed: () => _handleGoogleLink(context, ref),
-                          icon: const Icon(Icons.account_circle_outlined, size: 16),
-                          label: const Text(
-                            'Google 로그인',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                            visualDensity: VisualDensity.compact,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -829,27 +827,29 @@ class SettingsBackupScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '테마 모드 선택',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '테마 모드 선택',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '취향에 따라 라이트, 다크, 시스템 모드를 적용합니다.',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isDark
-                          ? AppTheme.darkTextSecondary
-                          : AppTheme.textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      '취향에 따라 라이트, 다크, 시스템 모드를 적용합니다.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -917,23 +917,26 @@ class SettingsBackupScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.verified_rounded,
-                color: Color(0xFF8B5CF6),
-                size: 20,
-              ),
-            ),
-            title: const Text('앱 버전', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.verified_rounded,
+                    color: Color(0xFF8B5CF6),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('앱 버전', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
                 const Text(
                   AppConstants.versionDisplay,
                   style: TextStyle(
@@ -961,30 +964,54 @@ class SettingsBackupScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Divider(height: 1, indent: 64, thickness: 0.8, color: cardBorderColor),
-          ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.teal.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.shield_outlined,
-                color: Colors.teal,
-                size: 20,
-              ),
-            ),
-            title: const Text(
-              '데이터 보호 및 개인정보 안내',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            subtitle: const Text(
-              '안전한 로컬 저장 및 클라우드 동기화 정책을 안내합니다.',
-              style: TextStyle(fontSize: 11.5),
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+          Divider(height: 1, indent: 56, thickness: 0.8, color: cardBorderColor),
+          InkWell(
             onTap: () => _showPrivacyDialog(context),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      color: Colors.teal,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '데이터 보호 및 개인정보 안내',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '안전한 로컬 저장 및 클라우드 동기화 정책을 안내합니다.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
+                ],
+              ),
+            ),
           ),
         ],
       ),
