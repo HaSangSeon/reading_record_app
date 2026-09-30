@@ -215,17 +215,83 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () async {
-              final success = await NoteFormDialog.show(context, book: book);
-              if (success == true && context.mounted) {
-                AppTheme.showPremiumSnackBar(context, '기록이 등록되었습니다.');
-              }
-            },
-            icon: const Icon(Icons.edit_rounded),
-            label: const Text(
-              '기록 남기기',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          floatingActionButton: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? const [
+                        Color(0xFF818CF8),
+                        Color(0xFF6366F1),
+                        Color(0xFF4F46E5),
+                      ]
+                    : const [
+                        Color(0xFF6366F1),
+                        Color(0xFF4F46E5),
+                        Color(0xFF4338CA),
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.25),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(
+                    0xFF4F46E5,
+                  ).withValues(alpha: isDark ? 0.5 : 0.38),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  final success =
+                      await NoteFormDialog.show(context, book: book);
+                  if (success == true && context.mounted) {
+                    AppTheme.showPremiumSnackBar(context, '기록이 등록되었습니다.');
+                  }
+                },
+                borderRadius: BorderRadius.circular(18),
+                splashColor: Colors.white.withValues(alpha: 0.2),
+                highlightColor: Colors.transparent,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '기록 남기기',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
           bottomNavigationBar: const AppBottomNavBar(isSubScreen: true),

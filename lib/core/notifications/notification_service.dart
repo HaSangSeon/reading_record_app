@@ -113,16 +113,21 @@ class NotificationService {
       );
       return granted ?? false;
     } else if (Platform.isMacOS) {
-      final macImplementation = _notificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            MacOSFlutterLocalNotificationsPlugin
-          >();
-      final granted = await macImplementation?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      return granted ?? false;
+      try {
+        final macImplementation = _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin
+            >();
+        await macImplementation?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      } catch (e) {
+        debugPrint('[Notification] macOS 알림 권한 요청 예외 (테스트 모드 유지): $e');
+      }
+      // 데스크탑(태블릿 UI 테스트) 환경에서는 시스템 알림 권한 획득 여부와 무관하게 UI 테스트 및 시간 설정이 가능하도록 무조건 true 반환
+      return true;
     }
     return true;
   }

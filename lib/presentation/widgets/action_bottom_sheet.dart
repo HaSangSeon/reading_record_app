@@ -26,8 +26,10 @@ class ActionBottomSheet {
         final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
         return SafeArea(
           bottom: false,
-          child: Container(
-            margin: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 440),
+              margin: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1B2332) : Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -293,6 +295,7 @@ class ActionBottomSheet {
             ],
           ),
           ),
+          ),
         ),
         );
       },
@@ -323,8 +326,10 @@ class ActionBottomSheet {
         final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
         return SafeArea(
           bottom: false,
-          child: Container(
-            margin: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 440),
+              margin: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1B2332) : Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -505,6 +510,7 @@ class ActionBottomSheet {
                 ),
               ),
             ],
+          ),
           ),
         ),
         );

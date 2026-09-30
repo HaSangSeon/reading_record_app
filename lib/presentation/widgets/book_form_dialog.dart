@@ -38,9 +38,11 @@ class BookFormDialog extends ConsumerStatefulWidget {
     String? coverUrl,
     int? totalPages,
   }) {
-    final isWide = MediaQuery.of(context).size.width > 600;
+    final mediaQuery = MediaQuery.of(context);
+    final isWide = mediaQuery.size.width > 600;
 
     if (isWide) {
+      final dialogWidth = (mediaQuery.size.width * 0.72).clamp(580.0, 680.0);
       return showDialog(
         context: context,
         builder: (context) => Dialog(
@@ -48,7 +50,7 @@ class BookFormDialog extends ConsumerStatefulWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           child: SizedBox(
-            width: 560,
+            width: dialogWidth,
             child: BookFormDialog(
               initialBook: book,
               initialTitle: title,
@@ -677,8 +679,22 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     ),
                     const SizedBox(height: 24),
                     // 등록/수정 버튼
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed: _submit,
+                      icon: Icon(
+                        isEdit
+                            ? Icons.check_circle_rounded
+                            : Icons.library_add_rounded,
+                        size: widget.isDialog ? 22 : 20,
+                      ),
+                      label: Text(
+                        isEdit ? '도서 정보 수정 완료' : '내 서재에 등록하기',
+                        style: TextStyle(
+                          fontSize: widget.isDialog ? 17.5 : 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark
                             ? AppTheme.primaryLight
@@ -686,18 +702,17 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                         foregroundColor: isDark
                             ? AppTheme.darkBackground
                             : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: Size(
+                          double.infinity,
+                          widget.isDialog ? 56 : 52,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          vertical: widget.isDialog ? 18 : 16,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        isEdit ? '도서 정보 수정 완료' : '내 서재에 등록하기',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        elevation: widget.isDialog ? 2 : 0,
                       ),
                     ),
                   ],

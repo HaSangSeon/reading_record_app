@@ -93,6 +93,8 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? AppTheme.darkSurface : Colors.white;
     final cardBg = isDark ? AppTheme.darkBackground : const Color(0xFFF8FAFC);
@@ -100,6 +102,11 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
     final textPrimary = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
     final textSecondary = isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary;
     final textMuted = isDark ? AppTheme.darkTextLight : AppTheme.textLight;
+
+    // 태블릿/데스크탑 환경에서는 화면 폭의 약 70%(최대 560px)로 안정감 있게 조절, 폰에서는 기본 패딩 유지
+    final double? dialogWidth = screenWidth > 600
+        ? (screenWidth * 0.70).clamp(440.0, 560.0)
+        : null;
 
     return Dialog(
       backgroundColor: dialogBg,
@@ -109,12 +116,14 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       elevation: 12,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: SizedBox(
+        width: dialogWidth,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // 1. 헤더 (타이틀 및 닫기 아이콘)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -176,21 +185,25 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                      color: AppTheme.primaryColor.withValues(alpha: isDark ? 0.25 : 0.12),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppTheme.primaryColor.withValues(alpha: isDark ? 0.4 : 0.25),
+                        width: 1.0,
+                      ),
                     ),
                     child: Text(
                       _isPm ? '오후' : '오전',
-                      style: const TextStyle(
-                        color: AppTheme.primaryLight,
-                        fontSize: 14,
+                      style: TextStyle(
+                        color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w800,
+                        height: 1.0,
                       ),
                     ),
                   ),
@@ -199,18 +212,36 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
                     '${_hour12.toString().padLeft(2, '0')} : ${_minute.toString().padLeft(2, '0')}',
                     style: TextStyle(
                       color: isDark ? Colors.white : AppTheme.primaryDark,
-                      fontSize: 32,
+                      fontSize: 34,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
+                      letterSpacing: 2.0,
+                      height: 1.0,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    '($_formatted24h)',
-                    style: TextStyle(
-                      color: textMuted,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : const Color(0xFF64748B).withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : const Color(0xFF64748B).withValues(alpha: 0.15),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      _formatted24h,
+                      style: TextStyle(
+                        color: isDark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        height: 1.0,
+                      ),
                     ),
                   ),
                 ],
@@ -223,7 +254,7 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
               children: [
                 // 3-1. 오전 / 오후 셀렉트박스
                 Expanded(
-                  flex: 11,
+                  flex: 1,
                   child: _buildDropdownContainer(
                     context: context,
                     isDark: isDark,
@@ -243,11 +274,11 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
                         items: const [
                           DropdownMenuItem(
                             value: false,
-                            child: Text('오전 (AM)'),
+                            child: Text('오전'),
                           ),
                           DropdownMenuItem(
                             value: true,
-                            child: Text('오후 (PM)'),
+                            child: Text('오후'),
                           ),
                         ],
                         onChanged: (val) {
@@ -266,7 +297,7 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
 
                 // 3-2. 시간 (01시 ~ 12시) 셀렉트박스
                 Expanded(
-                  flex: 10,
+                  flex: 1,
                   child: _buildDropdownContainer(
                     context: context,
                     isDark: isDark,
@@ -307,7 +338,7 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
 
                 // 3-3. 분 (00분 ~ 59분) 셀렉트박스
                 Expanded(
-                  flex: 10,
+                  flex: 1,
                   child: _buildDropdownContainer(
                     context: context,
                     isDark: isDark,
@@ -405,57 +436,61 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  child: SizedBox(
+                    height: 52,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        side: BorderSide(color: borderColor, width: 1.2),
                       ),
-                      side: BorderSide(color: borderColor),
-                    ),
-                    child: Text(
-                      '취소',
-                      style: TextStyle(
-                        color: textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        '취소',
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      try {
-                        HapticFeedback.mediumImpact();
-                      } catch (_) {}
-                      Navigator.pop(context, _currentTimeOfDay);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_rounded, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          '시간 설정 완료',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
-                          ),
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        try {
+                          HapticFeedback.mediumImpact();
+                        } catch (_) {}
+                        Navigator.pop(context, _currentTimeOfDay);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      ],
+                        elevation: 2,
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_rounded, size: 20),
+                          SizedBox(width: 6),
+                          Text(
+                            '시간 설정 완료',
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -464,8 +499,9 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// 셀렉트박스 감싸는 라벨형 컨테이너
   Widget _buildDropdownContainer({
@@ -491,7 +527,7 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
         ),
         const SizedBox(height: 4),
         Container(
-          height: 46,
+          height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: boxBg,

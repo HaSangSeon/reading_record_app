@@ -25,9 +25,11 @@ class NoteFormDialog extends ConsumerStatefulWidget {
     required Book book,
     Note? note,
   }) {
-    final isWide = MediaQuery.of(context).size.width > 600;
+    final mediaQuery = MediaQuery.of(context);
+    final isWide = mediaQuery.size.width > 600;
 
     if (isWide) {
+      final dialogWidth = (mediaQuery.size.width * 0.72).clamp(580.0, 680.0);
       return showDialog(
         context: context,
         builder: (context) => Dialog(
@@ -35,7 +37,7 @@ class NoteFormDialog extends ConsumerStatefulWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           child: SizedBox(
-            width: 560,
+            width: dialogWidth,
             child: NoteFormDialog(book: book, initialNote: note, isDialog: true),
           ),
         ),
@@ -431,6 +433,16 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
 
       String? scannedText;
 
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        if (mounted) {
+          AppTheme.showPremiumSnackBar(
+            context,
+            '문장 스캔(AI OCR)은 실제 Android/iPad 태블릿 및 모바일 기기에서 지원됩니다.',
+          );
+        }
+        return;
+      }
+
       if (action == 'camera') {
         // 1. 실시간 조준 라이브 스캐너 실행 (원터치 자동 크롭 & 인식)
         scannedText = await LiveOcrScanScreen.show(context);
@@ -799,9 +811,9 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             _buildFieldLabel('인상 깊은 구절 / 발췌문 *', isDark),
+                            const SizedBox(width: 10),
                             InkWell(
                               onTap: _scanQuoteFromImage,
                               borderRadius: BorderRadius.circular(12),
@@ -927,25 +939,38 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                     const SizedBox(height: 24),
 
                     // 등록/수정 버튼
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed: _submit,
+                      icon: Icon(
+                        isEdit
+                            ? Icons.check_circle_rounded
+                            : Icons.edit_note_rounded,
+                        size: widget.isDialog ? 22 : 20,
+                      ),
+                      label: Text(
+                        isEdit ? '기록 수정 완료' : '독서 기록 저장하기',
+                        style: TextStyle(
+                          fontSize: widget.isDialog ? 17.5 : 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark
                             ? AppTheme.primaryLight
                             : AppTheme.primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        minimumSize: Size(
+                          double.infinity,
+                          widget.isDialog ? 56 : 50,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          vertical: widget.isDialog ? 18 : 15,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 2,
-                      ),
-                      child: Text(
-                        isEdit ? '기록 수정 완료' : '독서 기록 저장하기',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
                     ),
                   ],

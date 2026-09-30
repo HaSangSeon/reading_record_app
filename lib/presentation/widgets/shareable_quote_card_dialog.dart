@@ -73,9 +73,12 @@ class ShareableQuoteCardDialog extends StatefulWidget {
     required Book book,
     required Note note,
   }) {
-    final isWide = MediaQuery.of(context).size.width > 600;
+    final mediaQuery = MediaQuery.of(context);
+    final isWide = mediaQuery.size.width > 600;
 
     if (isWide) {
+      final dialogWidth = math.min(mediaQuery.size.width * 0.85, 440.0);
+      final dialogHeight = math.min(mediaQuery.size.height * 0.86, 700.0);
       return showDialog(
         context: context,
         builder: (context) => Dialog(
@@ -84,7 +87,8 @@ class ShareableQuoteCardDialog extends StatefulWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           child: SizedBox(
-            width: 540,
+            width: dialogWidth,
+            height: dialogHeight,
             child: ShareableQuoteCardDialog(
                 book: book, note: note, isDialog: true),
           ),
@@ -96,7 +100,10 @@ class ShareableQuoteCardDialog extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ShareableQuoteCardDialog(book: book, note: note),
+      builder: (context) => SizedBox(
+        height: mediaQuery.size.height * 0.88,
+        child: ShareableQuoteCardDialog(book: book, note: note),
+      ),
     );
   }
 
@@ -105,8 +112,13 @@ class ShareableQuoteCardDialog extends StatefulWidget {
       _ShareableQuoteCardDialogState();
 }
 
-class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
+class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
+    with SingleTickerProviderStateMixin {
   final GlobalKey _cardKey = GlobalKey();
+  late final ScrollController _scrollController;
+  late final AnimationController _bounceController;
+  late final Animation<double> _bounceAnimation;
+  bool _showScrollHint = true;
   bool _isSharingKakao = false;
   bool _isSharingOther = false;
   bool _isCapturing = false;
@@ -114,6 +126,39 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
   int _selectedFontIndex = 0;
   bool _includeMemo = true; // 구절만 vs 구절+메모 토글 상태
   double _fontSizeScale = 1.0; // 텍스트 크기 조절 배율 (0.5 ~ 1.5)
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _bounceAnimation = Tween<double>(begin: 0.0, end: 6.0).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+    );
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      if (_scrollController.offset > 25 && _showScrollHint) {
+        setState(() => _showScrollHint = false);
+      } else if (_scrollController.offset <= 25 && !_showScrollHint) {
+        setState(() => _showScrollHint = true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   bool get _hasQuotation => widget.note.quotation.trim().isNotEmpty;
   bool get _hasMemo => widget.note.content.trim().isNotEmpty;
@@ -496,10 +541,8 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
       ),
       child: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: Column(
+          children: [
           // 1. 프리미엄 상단 헤더 영역
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 14, 16),
@@ -649,26 +692,39 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
             ),
           ),
 
-          // 2. 본문 카드 커스텀 및 공유 영역
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                top: 18,
-                left: 20,
-                right: 20,
-                bottom: math.max(MediaQuery.of(context).viewPadding.bottom, MediaQuery.of(context).padding.bottom) + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1:1 정사각형 감성 문장 카드 (RepaintBoundary로 캡처)
-                  Center(
-                    child: RepaintBoundary(
-                      key: _cardKey,
-                      child: AspectRatio(
-                        aspectRatio: 1.0,
-                        child: Container(
+          // 2. 본문 카드 커스텀 및 공유 영역 (스크롤바 + 힌트 인디케이터 포함)
+          Expanded(
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  radius: const Radius.circular(8),
+                  thickness: 5,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: EdgeInsets.only(
+                      top: 18,
+                      left: 20,
+                      right: 20,
+                      bottom: math.max(
+                            MediaQuery.of(context).viewPadding.bottom,
+                            MediaQuery.of(context).padding.bottom,
+                          ) +
+                          48,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 1:1 정사각형 감성 문장 카드 (RepaintBoundary로 캡처)
+                        Center(
+                          child: RepaintBoundary(
+                            key: _cardKey,
+                            child: AspectRatio(
+                              aspectRatio: 1.0,
+                              child: Container(
                           padding: const EdgeInsets.all(22),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -1346,10 +1402,74 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
               ),
             ),
           ),
+
+          // 3. 하단 스크롤 안내 반투명 플로팅 바운스 화살표 인디케이터 (스크롤이 상단에 있을 때 노출)
+          Positioned(
+            bottom: 14,
+            child: AnimatedOpacity(
+              opacity: _showScrollHint ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 250),
+              child: IgnorePointer(
+                ignoring: !_showScrollHint,
+                child: AnimatedBuilder(
+                  animation: _bounceAnimation,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(0, _bounceAnimation.value),
+                      child: child,
+                    );
+                  },
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        _scrollController.animateTo(
+                          220,
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                        );
+                      },
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark
+                              ? const Color(0xFF1E293B).withValues(alpha: 0.65)
+                              : Colors.black.withValues(alpha: 0.4),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
-        ),
-      ),
-    );
+    ),
+  ],
+),
+),
+);
   }
 }

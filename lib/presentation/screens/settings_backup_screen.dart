@@ -504,14 +504,36 @@ class SettingsBackupScreen extends ConsumerWidget {
                   .read(notificationControllerProvider.notifier)
                   .toggleNotification(val);
               if (!success && val && context.mounted) {
+                ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('알림 권한이 필요합니다. 기기 설정에서 알림을 허용해주세요.'),
-                    backgroundColor: Colors.redAccent,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    content: const Row(
+                      children: [
+                        Icon(
+                          Icons.notifications_off_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '알림 권한이 비활성화되어 있습니다. 기기 설정에서 알림을 허용해주세요.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    backgroundColor: const Color(0xFFEF4444),
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               }
@@ -704,35 +726,43 @@ class SettingsBackupScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 14),
 
-                  // 개별 요일 원형 토글 버튼 (월~일)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (int d = 1; d <= 7; d++)
-                        _buildDayCircleButton(
-                          day: d,
-                          isSelected: notificationState.selectedDays.contains(d),
-                          onTap: () async {
-                            final ok = await ref
-                                .read(notificationControllerProvider.notifier)
-                                .toggleDay(d);
-                            if (!ok && context.mounted) {
-                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text('최소 1개 이상의 요일을 선택해야 합니다.'),
-                                  behavior: SnackBarBehavior.floating,
-                                  duration: const Duration(seconds: 2),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          isDark: isDark,
+                  // 개별 요일 원형 토글 버튼 (월~일) - 태블릿 대화면에서 과도하게 벌어지지 않도록 최적 너비로 제한
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final rowWidth = constraints.maxWidth.clamp(0.0, 390.0);
+                      return SizedBox(
+                        width: rowWidth,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            for (int d = 1; d <= 7; d++)
+                              _buildDayCircleButton(
+                                day: d,
+                                isSelected: notificationState.selectedDays.contains(d),
+                                onTap: () async {
+                                  final ok = await ref
+                                      .read(notificationControllerProvider.notifier)
+                                      .toggleDay(d);
+                                  if (!ok && context.mounted) {
+                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('최소 1개 이상의 요일을 선택해야 합니다.'),
+                                        behavior: SnackBarBehavior.floating,
+                                        duration: const Duration(seconds: 2),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                isDark: isDark,
+                              ),
+                          ],
                         ),
-                    ],
+                      );
+                    },
                   ),
                 ],
               ),

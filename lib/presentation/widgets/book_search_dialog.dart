@@ -19,14 +19,15 @@ class BookSearchDialog extends ConsumerStatefulWidget {
     final isWide = mediaQuery.size.width > 600;
 
     if (isWide) {
+      final dialogWidth = (mediaQuery.size.width * 0.72).clamp(580.0, 680.0);
       return showDialog<bool>(
         context: context,
         builder: (context) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           clipBehavior: Clip.antiAlias,
           child: SizedBox(
-            width: 560,
-            height: math.min(mediaQuery.size.height * 0.85, 700),
+            width: dialogWidth,
+            height: math.min(mediaQuery.size.height * 0.85, 720),
             child: const Scaffold(
               backgroundColor: Colors.transparent,
               resizeToAvoidBottomInset: false,

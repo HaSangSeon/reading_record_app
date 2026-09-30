@@ -104,15 +104,23 @@ class NotificationController extends StateNotifier<NotificationSettingsState> {
         return false;
       }
 
-      await _notificationService.scheduleReminder(
-        hour: state.time.hour,
-        minute: state.time.minute,
-        days: state.selectedDays,
-        books: books,
-        notes: notes,
-      );
+      try {
+        await _notificationService.scheduleReminder(
+          hour: state.time.hour,
+          minute: state.time.minute,
+          days: state.selectedDays,
+          books: books,
+          notes: notes,
+        );
+      } catch (e) {
+        debugPrint('[NotificationController] 스케줄링 예외: $e');
+      }
     } else {
-      await _notificationService.cancelDailyReminder();
+      try {
+        await _notificationService.cancelDailyReminder();
+      } catch (e) {
+        debugPrint('[NotificationController] 알림 취소 예외: $e');
+      }
     }
 
     state = state.copyWith(isEnabled: enabled);

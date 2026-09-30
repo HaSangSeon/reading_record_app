@@ -20,11 +20,12 @@ class CustomConfirmDialog {
       barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (ctx) => Center(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 28),
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          constraints: const BoxConstraints(maxWidth: 380),
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1A2230) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: isDark ? const Color(0xFF2C394E) : const Color(0xFFE2E8F0),
               width: 1,
@@ -42,170 +43,185 @@ class CustomConfirmDialog {
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-              children: [
-                // 1. 상단 아이콘 뱃지
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: isDestructive
-                        ? const Color(
-                            0xFFEF4444,
-                          ).withValues(alpha: isDark ? 0.2 : 0.1)
-                        : (isDark
+                children: [
+                  // 1. 상단 아이콘 뱃지
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: isDestructive
+                          ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.18 : 0.1)
+                          : (isDark
                                   ? AppTheme.primaryLight
                                   : AppTheme.primaryColor)
-                              .withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDestructive
-                          ? const Color(0xFFEF4444).withValues(alpha: 0.3)
-                          : (isDark
+                              .withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDestructive
+                            ? const Color(0xFFEF4444).withValues(alpha: 0.25)
+                            : (isDark
                                     ? AppTheme.primaryLight
                                     : AppTheme.primaryColor)
-                                .withValues(alpha: 0.3),
-                      width: 1.5,
+                                .withValues(alpha: 0.25),
+                        width: 1.2,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 26,
-                    color: isDestructive
-                        ? const Color(0xFFEF4444)
-                        : (isDark
+                    child: Icon(
+                      icon,
+                      size: 22,
+                      color: isDestructive
+                          ? const Color(0xFFEF4444)
+                          : (isDark
                               ? AppTheme.primaryLight
                               : AppTheme.primaryColor),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 2. 타이틀
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    color: isDark
-                        ? AppTheme.darkTextPrimary
-                        : AppTheme.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-
-                // 3. 타겟 하이라이트 박스 (도서명 등)
-                if (highlightedTarget != null &&
-                    highlightedTarget.isNotEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 9,
                     ),
-                    decoration: BoxDecoration(
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 2. 타이틀
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
                       color: isDark
-                          ? const Color(0xFF101724)
-                          : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF263345)
-                            : const Color(0xFFE2E8F0),
-                        width: 0.8,
-                      ),
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
                     ),
-                    child: Text(
-                      '“$highlightedTarget”',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppTheme.primaryLight
-                            : AppTheme.primaryColor,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 3. 타겟 하이라이트 박스 (도서명 / 발췌문 등)
+                  if (highlightedTarget != null &&
+                      highlightedTarget.isNotEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-
-                // 4. 상세 안내 메시지
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    height: 1.45,
-                    color: isDark
-                        ? AppTheme.darkTextSecondary
-                        : AppTheme.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 22),
-
-                // 5. 하단 버튼 영역 (취소 / 삭제)
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark
-                              ? AppTheme.darkTextSecondary
-                              : AppTheme.textSecondary,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          side: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFCBD5E1),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF101724)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF263345)
+                              : const Color(0xFFE2E8F0),
+                          width: 0.8,
                         ),
-                        child: Text(
-                          cancelText,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      ),
+                      child: Text(
+                        '“$highlightedTarget”',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryColor,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDestructive
-                              ? const Color(0xFFEF4444)
-                              : (isDark
+                    const SizedBox(height: 8),
+                  ],
+
+                  // 4. 상세 안내 메시지
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+
+                  // 5. 하단 버튼 영역 (취소 / 삭제 - 슬림하고 고급스러운 규격)
+                  Row(
+                    children: [
+                      // 취소 버튼
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : const Color(0xFFF8FAFC),
+                            foregroundColor: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            minimumSize: const Size(0, 40),
+                            side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0),
+                              width: 1,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            cancelText,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // 삭제/확인 버튼
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          icon: Icon(
+                            isDestructive
+                                ? Icons.delete_outline_rounded
+                                : Icons.check_rounded,
+                            size: 16,
+                          ),
+                          label: Text(
+                            confirmText,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDestructive
+                                ? const Color(0xFFE11D48)
+                                : (isDark
                                     ? AppTheme.primaryLight
                                     : AppTheme.primaryColor),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          confirmText,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            minimumSize: const Size(0, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                    ],
+                  ),
+                ],
               ),
+            ),
           ),
         ),
       ),
