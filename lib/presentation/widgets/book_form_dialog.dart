@@ -16,6 +16,7 @@ class BookFormDialog extends ConsumerStatefulWidget {
   final String? initialPublisher;
   final String? initialCoverUrl;
   final int? initialTotalPages;
+  final bool isDialog;
 
   const BookFormDialog({
     super.key,
@@ -25,6 +26,7 @@ class BookFormDialog extends ConsumerStatefulWidget {
     this.initialPublisher,
     this.initialCoverUrl,
     this.initialTotalPages,
+    this.isDialog = false,
   });
 
   static Future<bool?> show(
@@ -36,6 +38,31 @@ class BookFormDialog extends ConsumerStatefulWidget {
     String? coverUrl,
     int? totalPages,
   }) {
+    final isWide = MediaQuery.of(context).size.width > 600;
+
+    if (isWide) {
+      return showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: SizedBox(
+            width: 560,
+            child: BookFormDialog(
+              initialBook: book,
+              initialTitle: title,
+              initialAuthor: author,
+              initialPublisher: publisher,
+              initialCoverUrl: coverUrl,
+              initialTotalPages: totalPages,
+              isDialog: true,
+            ),
+          ),
+        ),
+      );
+    }
+
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -267,7 +294,9 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161C24) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: widget.isDialog
+            ? BorderRadius.circular(28)
+            : const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

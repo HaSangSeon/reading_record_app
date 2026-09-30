@@ -11,9 +11,32 @@ import '../screens/book_detail_screen.dart';
 import 'book_form_dialog.dart';
 
 class BookSearchDialog extends ConsumerStatefulWidget {
-  const BookSearchDialog({super.key});
+  final bool isDialog;
+  const BookSearchDialog({super.key, this.isDialog = false});
 
   static Future<bool?> show(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final isWide = mediaQuery.size.width > 600;
+
+    if (isWide) {
+      return showDialog<bool>(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: 560,
+            height: math.min(mediaQuery.size.height * 0.85, 700),
+            child: const Scaffold(
+              backgroundColor: Colors.transparent,
+              resizeToAvoidBottomInset: false,
+              body: BookSearchDialog(isDialog: true),
+            ),
+          ),
+        ),
+      );
+    }
+
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -52,10 +75,12 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
-      height: mediaQuery.size.height * 0.88,
+      height: widget.isDialog ? null : mediaQuery.size.height * 0.88,
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: widget.isDialog
+            ? BorderRadius.zero
+            : const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [

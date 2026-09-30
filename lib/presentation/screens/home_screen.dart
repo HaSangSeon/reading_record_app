@@ -274,12 +274,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             splashColor: Colors.white.withValues(alpha: 0.2),
             highlightColor: Colors.transparent,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.22),
                       shape: BoxShape.circle,
@@ -287,14 +287,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: const Icon(
                       Icons.add_rounded,
                       color: Colors.white,
-                      size: 18,
+                      size: 16,
                     ),
                   ),
                   const SizedBox(width: 8),
                   const Text(
                     '책 등록',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: -0.3,
@@ -382,33 +382,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showAddBookOptions(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+    final mediaQuery = MediaQuery.of(context);
+    final isWide = mediaQuery.size.width > 600;
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        final mq = MediaQuery.of(ctx);
-        final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppTheme.darkSurface : Colors.white,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark
-                  ? [
-                      const Color(0xFF1E1B2E),
-                      AppTheme.darkSurface,
-                      AppTheme.darkBackground,
-                    ]
-                  : [
-                      const Color(0xFFFAF8FE),
-                      Colors.white,
-                      const Color(0xFFF6F4FA),
-                    ],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+    Widget buildContent(BuildContext ctx, {bool isDialog = false}) {
+      final mq = MediaQuery.of(ctx);
+      final bottomInset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurface : Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    const Color(0xFF1E1B2E),
+                    AppTheme.darkSurface,
+                    AppTheme.darkBackground,
+                  ]
+                : [
+                    const Color(0xFFFAF8FE),
+                    Colors.white,
+                    const Color(0xFFF6F4FA),
+                  ],
+          ),
+          borderRadius: isDialog
+              ? BorderRadius.circular(28)
+              : const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.1)
@@ -645,8 +645,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         );
-      },
-    );
+    }
+
+    if (isWide) {
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: SizedBox(
+            width: 500,
+            child: buildContent(ctx, isDialog: true),
+          ),
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (ctx) => buildContent(ctx),
+      );
+    }
   }
 
   Widget _buildBookAddOptionCard({

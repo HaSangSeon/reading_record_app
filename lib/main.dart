@@ -15,9 +15,11 @@ void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 세로 모드로 화면 방향 고정
+  // 기기 방향 제한 해제 (가로/세로 모두 지원)
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
   ]);
 
   // 1. 로컬 Hive 데이터베이스 초기화 및 Box 오픈

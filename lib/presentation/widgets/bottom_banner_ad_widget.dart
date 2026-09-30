@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/ads/admob_service.dart';
@@ -16,24 +18,37 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
   AdSize? _adSize;
+  int? _currentWidth;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!kHideBannerAdForScreenshot) {
-      _loadAdaptiveBannerAd();
+      final newWidth = MediaQuery.of(context).size.width.truncate();
+      if (_currentWidth == null || _currentWidth != newWidth) {
+        _currentWidth = newWidth;
+        _loadAdaptiveBannerAd(forceReload: true);
+      }
     }
   }
 
-  Future<void> _loadAdaptiveBannerAd() async {
+  Future<void> _loadAdaptiveBannerAd({bool forceReload = false}) async {
     if (kHideBannerAdForScreenshot) return;
-    if (_isAdLoaded && _bannerAd != null) return;
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    if (!forceReload && _isAdLoaded && _bannerAd != null) return;
 
     final adUnitId = AdMobService.bannerAdUnitId;
     if (adUnitId.isEmpty) return;
 
     // 기기 화면 가로 폭 100%를 가져와서 꽉 차는 표준 적응형 배너 사이즈 생성
-    final width = MediaQuery.of(context).size.width.truncate();
+    final width = _currentWidth ?? MediaQuery.of(context).size.width.truncate();
+
+    // 기존 광고가 있다면 해제하고 플래그 초기화
+    if (forceReload && _bannerAd != null) {
+      _bannerAd?.dispose();
+      _bannerAd = null;
+      _isAdLoaded = false;
+    }
 
     // ignore: deprecated_member_use
     final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width) ??
@@ -88,11 +103,40 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (kHideBannerAdForScreenshot || !_isAdLoaded || _bannerAd == null || _adSize == null) {
+    if (kHideBannerAdForScreenshot) {
       return const SizedBox.shrink();
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return Container(
+        width: double.infinity,
+        height: 60.0,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E242B) : const Color(0xFFF1F5F9),
+          border: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF2C353F) : const Color(0xFFE2E8F0),
+              width: 0.8,
+            ),
+          ),
+        ),
+        child: Text(
+          '배너 광고 영역 (테스트용)',
+          style: TextStyle(
+            color: isDark ? Colors.white54 : Colors.black54,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    if (!_isAdLoaded || _bannerAd == null || _adSize == null) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       width: double.infinity,

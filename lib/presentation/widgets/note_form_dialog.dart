@@ -16,14 +16,32 @@ import 'ocr_text_picker_sheet.dart';
 class NoteFormDialog extends ConsumerStatefulWidget {
   final Book book;
   final Note? initialNote;
+  final bool isDialog;
 
-  const NoteFormDialog({super.key, required this.book, this.initialNote});
+  const NoteFormDialog({super.key, required this.book, this.initialNote, this.isDialog = false});
 
   static Future<bool?> show(
     BuildContext context, {
     required Book book,
     Note? note,
   }) {
+    final isWide = MediaQuery.of(context).size.width > 600;
+
+    if (isWide) {
+      return showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: SizedBox(
+            width: 560,
+            child: NoteFormDialog(book: book, initialNote: note, isDialog: true),
+          ),
+        ),
+      );
+    }
+
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -566,7 +584,9 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161C24) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: widget.isDialog 
+            ? BorderRadius.circular(28) 
+            : const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

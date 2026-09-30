@@ -59,11 +59,13 @@ class QuoteCardFont {
 class ShareableQuoteCardDialog extends StatefulWidget {
   final Book book;
   final Note note;
+  final bool isDialog;
 
   const ShareableQuoteCardDialog({
     super.key,
     required this.book,
     required this.note,
+    this.isDialog = false,
   });
 
   static Future<void> show(
@@ -71,6 +73,25 @@ class ShareableQuoteCardDialog extends StatefulWidget {
     required Book book,
     required Note note,
   }) {
+    final isWide = MediaQuery.of(context).size.width > 600;
+
+    if (isWide) {
+      return showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: SizedBox(
+            width: 540,
+            child: ShareableQuoteCardDialog(
+                book: book, note: note, isDialog: true),
+          ),
+        ),
+      );
+    }
+
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -469,7 +490,9 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161C24) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: widget.isDialog
+            ? BorderRadius.circular(28)
+            : const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
         top: false,
@@ -1274,14 +1297,14 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                               : const Icon(Icons.chat_bubble_rounded, size: 16),
                           label: Text(
                             _isSharingKakao ? '생성 중...' : '카카오톡',
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: widget.isDialog ? 15 : 13),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFEE500),
                             foregroundColor: Colors.black87,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: EdgeInsets.symmetric(vertical: widget.isDialog ? 18 : 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(widget.isDialog ? 16 : 14),
                             ),
                             elevation: 0,
                           ),
@@ -1304,14 +1327,14 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog> {
                               : const Icon(Icons.share_rounded, size: 16),
                           label: Text(
                             _isSharingOther ? '생성 중...' : '기타 공유',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: widget.isDialog ? 15 : 13),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4F46E5),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: EdgeInsets.symmetric(vertical: widget.isDialog ? 18 : 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(widget.isDialog ? 16 : 14),
                             ),
                             elevation: 2,
                           ),
