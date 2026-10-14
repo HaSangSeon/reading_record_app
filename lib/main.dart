@@ -10,10 +10,14 @@ import 'core/theme/app_theme.dart';
 import 'presentation/controllers/theme_controller.dart';
 import 'presentation/screens/main_navigation_screen.dart';
 import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 날짜/로케일 포맷터 초기화 (한국어 등 지원)
+  await initializeDateFormatting('ko_KR', null);
 
   // 기기 방향 제한 해제 (가로/세로 모두 지원)
   await SystemChrome.setPreferredOrientations([

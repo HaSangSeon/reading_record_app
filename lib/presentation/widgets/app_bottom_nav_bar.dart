@@ -117,7 +117,7 @@ class AppBottomNavBar extends ConsumerWidget {
                       ref: ref,
                       index: 2,
                       currentIndex: currentIndex,
-                      label: '독서 통계',
+                      label: '통계·달력',
                       icon: Icons.bar_chart_outlined,
                       activeIcon: Icons.bar_chart_rounded,
                       primary: primary,

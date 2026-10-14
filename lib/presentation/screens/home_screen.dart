@@ -6,11 +6,13 @@ import '../../data/models/book_model.dart';
 import '../../providers/repository_providers.dart';
 import '../controllers/book_controller.dart';
 import '../controllers/theme_controller.dart';
+import '../widgets/app_bottom_nav_bar.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_form_dialog.dart';
 import '../widgets/book_search_dialog.dart';
 import '../widgets/library_background.dart';
 import '../widgets/stats_header.dart';
+import 'stats_dashboard_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -199,6 +201,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
             tooltip: '클라우드 동기화',
             onPressed: _isSyncing ? null : _syncData,
+          ),
+          // 독서 캘린더 바로가기 버튼
+          IconButton(
+            icon: const Icon(Icons.calendar_month_rounded),
+            tooltip: '독서 캘린더',
+            onPressed: () {
+              ref.read(statsTabSegmentProvider.notifier).state = 1;
+              ref.read(mainNavigationIndexProvider.notifier).state = 2;
+            },
           ),
           // 내 서재 내 검색 버튼
           IconButton(

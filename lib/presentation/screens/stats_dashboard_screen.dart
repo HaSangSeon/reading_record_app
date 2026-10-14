@@ -1,5 +1,6 @@
 import "dart:math" as math;
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:intl/intl.dart";
 import "../../core/theme/app_theme.dart";
@@ -8,6 +9,10 @@ import "../../data/models/note_model.dart";
 import "../../providers/repository_providers.dart";
 import "../controllers/theme_controller.dart";
 import "book_detail_screen.dart";
+import "../widgets/reading_calendar_view.dart";
+
+/// 통계 및 캘린더 화면 상단 세그먼트 인덱스 (0: 통계 대시보드, 1: 독서 캘린더)
+final statsTabSegmentProvider = StateProvider<int>((ref) => 0);
 
 class StatsDashboardScreen extends ConsumerStatefulWidget {
   const StatsDashboardScreen({super.key});
@@ -107,6 +112,8 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
     final booksAsync = ref.watch(allBooksStreamProvider);
     final notesAsync = ref.watch(allNotesStreamProvider);
 
+    final selectedSegment = ref.watch(statsTabSegmentProvider);
+
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: AppTheme.buildAppBarFlexibleSpace(isDark),
@@ -121,13 +128,15 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                Icons.analytics_rounded,
+                selectedSegment == 0
+                    ? Icons.analytics_rounded
+                    : Icons.calendar_month_rounded,
                 color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
                 size: 20,
               ),
             ),
             const SizedBox(width: 10),
-            const Text("독서 통계 & 리포트"),
+            Text(selectedSegment == 0 ? "독서 통계 & 리포트" : "독서 캘린더"),
           ],
         ),
         actions: [
@@ -162,6 +171,53 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
           ),
           const SizedBox(width: 4),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: (isDark ? const Color(0xFF1B172C) : const Color(0xFFEDE8F5))
+                    .withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2C2548) : const Color(0xFFDFD8EC),
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildSegmentButton(
+                      title: "통계 대시보드",
+                      icon: Icons.analytics_rounded,
+                      isSelected: selectedSegment == 0,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(statsTabSegmentProvider.notifier).state = 0;
+                      },
+                      isDark: isDark,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildSegmentButton(
+                      title: "독서 캘린더",
+                      icon: Icons.calendar_month_rounded,
+                      isSelected: selectedSegment == 1,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(statsTabSegmentProvider.notifier).state = 1;
+                      },
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -184,7 +240,19 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
         child: booksAsync.when(
           data: (books) {
             return notesAsync.when(
-              data: (notes) => _buildDashboardBody(context, books, notes),
+              data: (notes) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: selectedSegment == 1
+                      ? ReadingCalendarView(
+                          key: const ValueKey("reading_calendar_view"),
+                          books: books,
+                          notes: notes,
+                          onRefresh: _syncData,
+                        )
+                      : _buildDashboardBody(context, books, notes),
+                );
+              },
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppTheme.primaryColor),
               ),
@@ -195,6 +263,67 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
             child: CircularProgressIndicator(color: AppTheme.primaryColor),
           ),
           error: (err, _) => Center(child: Text("도서 통계 오류: $err")),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentButton({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppTheme.primaryColor : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1.5),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.textSecondary),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected
+                    ? (isDark ? Colors.white : (isSelected ? primary : AppTheme.textPrimary))
+                    : (isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary),
+              ),
+            ),
+          ],
         ),
       ),
     );
