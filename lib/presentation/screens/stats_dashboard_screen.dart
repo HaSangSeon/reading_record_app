@@ -59,7 +59,10 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
     try {
       final hiveService = ref.read(hiveServiceProvider);
       final firebaseService = ref.read(firebaseServiceProvider);
-      final success = await firebaseService.syncWithCloud(hiveService);
+      final syncResult = await firebaseService.syncWithCloud(hiveService);
+      ref.invalidate(allBooksStreamProvider);
+      ref.invalidate(allNotesStreamProvider);
+      final success = syncResult.success;
       if (mounted) {
         _animCtrl.forward(from: 0.0);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();

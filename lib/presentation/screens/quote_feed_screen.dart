@@ -44,7 +44,10 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
     try {
       final hiveService = ref.read(hiveServiceProvider);
       final firebaseService = ref.read(firebaseServiceProvider);
-      final success = await firebaseService.syncWithCloud(hiveService);
+      final syncResult = await firebaseService.syncWithCloud(hiveService);
+      ref.invalidate(allBooksStreamProvider);
+      ref.invalidate(allNotesStreamProvider);
+      final success = syncResult.success;
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(

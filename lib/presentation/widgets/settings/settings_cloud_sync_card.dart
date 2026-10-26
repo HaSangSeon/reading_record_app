@@ -356,26 +356,41 @@ class SettingsCloudSyncCard extends ConsumerWidget {
 
       final hiveService = ref.read(hiveServiceProvider);
       final firebaseService = ref.read(firebaseServiceProvider);
-      final success = await firebaseService.syncWithCloud(hiveService);
+      final result = await firebaseService.syncWithCloud(hiveService);
+
+      // 데이터 변경 사항을 UI에 즉시 반영하기 위해 Provider 리프레시
+      ref.invalidate(allBooksStreamProvider);
+      ref.invalidate(allNotesStreamProvider);
 
       if (context.mounted) {
         Navigator.of(context).pop(); // pop loading
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        String message;
+        if (result.success) {
+          if (result.booksDownloaded > 0 || result.notesDownloaded > 0) {
+            message =
+                '클라우드에서 책 ${result.booksDownloaded}권, 기록 ${result.notesDownloaded}개를 불러왔습니다! ☁️';
+          } else {
+            message = '클라우드와 최신 데이터로 동기화되었습니다. (보관 도서 $booksCount권)';
+          }
+        } else {
+          message = '동기화 실패: ${result.errorMessage ?? '네트워크 연결을 확인해주세요.'}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 Icon(
-                  success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  result.success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
                   color: Colors.white,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    success
-                        ? '클라우드와 최신 데이터로 동기화되었습니다.'
-                        : '동기화 중 오류가 발생했습니다.',
+                    message,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -385,9 +400,9 @@ class SettingsCloudSyncCard extends ConsumerWidget {
               ],
             ),
             backgroundColor:
-                success ? const Color(0xFF10B981) : Colors.redAccent,
+                result.success ? const Color(0xFF10B981) : Colors.redAccent,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: result.success ? 3 : 4),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -415,19 +430,56 @@ class SettingsCloudSyncCard extends ConsumerWidget {
       );
 
       final hiveService = ref.read(hiveServiceProvider);
-      await FirebaseService().signInOrLinkWithGoogle(hiveService);
+      final result = await FirebaseService().signInOrLinkWithGoogle(hiveService);
+
+      // 데이터 변경 사항을 UI에 즉시 반영하기 위해 Provider 리프레시
+      ref.invalidate(allBooksStreamProvider);
+      ref.invalidate(allNotesStreamProvider);
 
       if (context.mounted) {
         Navigator.of(context).pop(); // pop loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('구글 계정이 성공적으로 연동되었습니다.')),
-        );
+
+        if (result == null) {
+          // 사용자가 구글 로그인 창에서 취소한 경우
+          return;
+        }
+
+        if (result.success) {
+          String message;
+          if (result.booksDownloaded > 0 || result.notesDownloaded > 0) {
+            message =
+                '구글 계정이 연동되었습니다! 클라우드에서 책 ${result.booksDownloaded}권, 기록 ${result.notesDownloaded}개를 불러왔습니다. 🎉';
+          } else {
+            message = '구글 계정이 성공적으로 연동되었습니다.';
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('계정은 연결되었으나 데이터 동기화 중 오류: ${result.errorMessage}'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop(); // pop loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('연동 실패: $e')),
+          SnackBar(
+            content: Text('연동 실패: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -465,17 +517,28 @@ class SettingsCloudSyncCard extends ConsumerWidget {
       final hiveService = ref.read(hiveServiceProvider);
       await FirebaseService().unlinkGoogle(hiveService);
 
+      // 연동 해제 후 로컬 초기화된 상태를 UI에 즉시 반영
+      ref.invalidate(allBooksStreamProvider);
+      ref.invalidate(allNotesStreamProvider);
+
       if (context.mounted) {
         Navigator.of(context).pop(); // pop loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('연동이 해제되었습니다.')),
+          const SnackBar(
+            content: Text('연동이 해제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop(); // pop loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('해제 실패: $e')),
+          SnackBar(
+            content: Text('해제 실패: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }

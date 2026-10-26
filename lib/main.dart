@@ -41,7 +41,9 @@ void main() async {
   );
 
   // 4. 로컬 Hive와 Firebase 클라우드 초기 양방향 동기화 (기존 데이터 업로드 / 재설치 시 복원)
-  firebaseService.initialSyncWithHive(hiveService).catchError((_) {});
+  firebaseService
+      .initialSyncWithHive(hiveService)
+      .catchError((_) => const SyncResult(success: false));
 
   // 5. 로컬 푸시 알림 서비스 초기화 및 활성 알림 스케줄 복구
   final notificationService = NotificationService();
