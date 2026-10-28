@@ -98,6 +98,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
   int _selectedFontIndex = 0;
   bool _includeMemo = true; // 구절만 vs 구절+메모 토글 상태
   double _fontSizeScale = 1.0; // 텍스트 크기 조절 배율 (0.5 ~ 1.3)
+  bool _hasUserAdjustedFontSize = false; // 사용자가 슬라이더로 직접 조절했는지 여부
   File? _customImageFile; // 사용자가 앨범에서 선택한 배경 사진
   bool _isCustomImageActive = false; // 내 사진 배경 활성화 여부
   double _imageDimOpacity = 0.45; // 배경 사진 어둡기 오버레이 투명도 (0.15 ~ 0.85)
@@ -108,6 +109,7 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
   @override
   void initState() {
     super.initState();
+    _fontSizeScale = _calculateInitialFontSizeScale();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
@@ -161,6 +163,47 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
       return widget.note.content.trim();
     }
     return null;
+  }
+
+  /// 텍스트 길이 및 줄바꿈 수에 맞춰 카드 하단이 잘리지 않도록 초기 폰트 크기 배율 자동 산출
+  double _calculateInitialFontSizeScale({bool? includeMemo}) {
+    final useMemo = includeMemo ?? _includeMemo;
+    final mainText = _displayMainText;
+    final bool hasSubMemo =
+        _canToggleMemo && useMemo && widget.note.content.trim().isNotEmpty;
+    final subText = hasSubMemo ? widget.note.content.trim() : null;
+
+    final int mainNewlines = '\n'.allMatches(mainText).length + 1;
+    final int subNewlines =
+        subText != null ? ('\n'.allMatches(subText).length + 1) : 0;
+
+    // 본문: 한 줄에 대략 19~22자. 줄바꿈 및 글자 길이 중 더 큰 쪽을 줄 수로 추정
+    final double estimatedMainLines =
+        math.max(mainNewlines.toDouble(), mainText.length / 19.0);
+    // 서브 메모: 한 줄에 대략 23~26자
+    final double estimatedSubLines = subText != null
+        ? math.max(subNewlines.toDouble(), subText.length / 23.0)
+        : 0.0;
+
+    // 서브 메모가 있는 경우 구분선 및 '생각 메모' 타이틀 높이(약 32px)를 1.8줄 분량으로 가산
+    final double totalEquivalentLines = estimatedMainLines +
+        (subText != null ? (estimatedSubLines + 1.8) : 0.0);
+
+    if (totalEquivalentLines <= 4.0) {
+      return 1.0;
+    } else if (totalEquivalentLines <= 5.5) {
+      return 0.95;
+    } else if (totalEquivalentLines <= 7.0) {
+      return 0.90;
+    } else if (totalEquivalentLines <= 8.5) {
+      return 0.80;
+    } else if (totalEquivalentLines <= 10.5) {
+      return 0.70;
+    } else if (totalEquivalentLines <= 13.0) {
+      return 0.60;
+    } else {
+      return 0.55;
+    }
   }
 
   Future<void> _pickCustomImage() async {
@@ -547,7 +590,14 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
                             QuoteCardMemoToggle(
                               includeMemo: _includeMemo,
                               onToggle: (val) {
-                                setState(() => _includeMemo = val);
+                                setState(() {
+                                  _includeMemo = val;
+                                  if (!_hasUserAdjustedFontSize) {
+                                    _fontSizeScale =
+                                        _calculateInitialFontSizeScale(
+                                            includeMemo: val);
+                                  }
+                                });
                               },
                             ),
                             const SizedBox(height: 18),
@@ -610,7 +660,10 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
                           QuoteCardFontSizeSlider(
                             fontSizeScale: _fontSizeScale,
                             onChanged: (val) {
-                              setState(() => _fontSizeScale = val);
+                              setState(() {
+                                _fontSizeScale = val;
+                                _hasUserAdjustedFontSize = true;
+                              });
                             },
                           ),
 
