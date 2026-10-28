@@ -137,7 +137,7 @@ class StatsHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            "총 $totalBooks권",
+                            "전체 $totalBooks권",
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
@@ -155,14 +155,14 @@ class StatsHeader extends StatelessWidget {
                 // 중앙 3대 지표 (읽는 중 / 완독 / 완독률)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 14,
+                    vertical: 13,
+                    horizontal: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(14),
+                    color: Colors.black.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: Colors.white.withValues(alpha: 0.12),
                       width: 0.8,
                     ),
                   ),
@@ -172,39 +172,66 @@ class StatsHeader extends StatelessWidget {
                         children: [
                           _buildStatItem(
                             label: "읽는 중",
-                            value: "$readingBooks권",
+                            number: "$readingBooks",
+                            unit: "권",
                             icon: Icons.local_fire_department_rounded,
                             iconColor: const Color(0xFFFDE047),
                           ),
                           _buildDivider(),
                           _buildStatItem(
-                            label: "완독 완료",
-                            value: "$completedBooks권",
+                            label: "완독",
+                            number: "$completedBooks",
+                            unit: "권",
                             icon: Icons.check_circle_rounded,
                             iconColor: const Color(0xFF86EFAC),
                           ),
                           _buildDivider(),
                           _buildStatItem(
                             label: "완독률",
-                            value: "$completionRate%",
-                            icon: Icons.task_alt_rounded,
+                            number: "$completionRate",
+                            unit: "%",
+                            icon: Icons.pie_chart_rounded,
                             iconColor: const Color(0xFFC4B5FD),
                           ),
                         ],
                       ),
                       if (totalBooks > 0) ...[
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: completedBooks / totalBooks,
-                            minHeight: 4,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.15),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF86EFAC),
+                        const SizedBox(height: 12),
+                        Stack(
+                          children: [
+                            Container(
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
                             ),
-                          ),
+                            FractionallySizedBox(
+                              widthFactor: (completedBooks / totalBooks)
+                                  .clamp(0.0, 1.0),
+                              child: Container(
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF86EFAC),
+                                      Color(0xFF34D399),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(3),
+                                  boxShadow: completedBooks > 0
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF34D399)
+                                                .withValues(alpha: 0.45),
+                                            blurRadius: 4,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -220,37 +247,66 @@ class StatsHeader extends StatelessWidget {
 
   Widget _buildStatItem({
     required String label,
-    required String value,
+    required String number,
+    required String unit,
     required IconData icon,
     required Color iconColor,
   }) {
     return Expanded(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 13, color: iconColor),
-              const SizedBox(width: 3.5),
+              Container(
+                width: 17,
+                height: 17,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 10.5, color: iconColor),
+              ),
+              const SizedBox(width: 4.5),
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-            ),
+          const SizedBox(height: 5),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Text(
+                unit,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -259,9 +315,9 @@ class StatsHeader extends StatelessWidget {
 
   Widget _buildDivider() {
     return Container(
-      height: 28,
+      height: 32,
       width: 1,
-      color: Colors.white.withValues(alpha: 0.15),
+      color: Colors.white.withValues(alpha: 0.12),
     );
   }
 }
