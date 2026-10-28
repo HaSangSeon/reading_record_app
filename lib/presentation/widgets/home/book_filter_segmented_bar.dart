@@ -129,6 +129,7 @@ class BookFilterSegmentedBar extends ConsumerWidget {
                 title,
                 style: TextStyle(
                   fontSize: 13,
+                  height: 1.2,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   letterSpacing: -0.3,
                   color: isSelected
@@ -139,25 +140,27 @@ class BookFilterSegmentedBar extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 4.5),
-              // 카운트 뱃지
+              // 카운트 뱃지 (글자와 상하 높이 중심 완벽 일치)
               Container(
+                margin: const EdgeInsets.only(top: 1.5),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 5.5,
-                  vertical: 1.5,
+                  horizontal: 6,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? primary.withValues(alpha: isDark ? 0.3 : 0.12)
+                      ? primary.withValues(alpha: isDark ? 0.3 : 0.14)
                       : (isDark
                                 ? const Color(0xFF2C384E)
                                 : const Color(0xFFDCD5EE))
-                            .withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
+                            .withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 11,
+                    height: 1.15,
                     fontWeight: FontWeight.w800,
                     color: isSelected
                         ? primary
