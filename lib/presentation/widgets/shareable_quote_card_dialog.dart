@@ -165,45 +165,101 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
     return null;
   }
 
-  /// 텍스트 길이 및 줄바꿈 수에 맞춰 카드 하단이 잘리지 않도록 초기 폰트 크기 배율 자동 산출
-  double _calculateInitialFontSizeScale({bool? includeMemo}) {
+  /// 텍스트 길이 및 줄바꿈 수에 맞춰 카드 하단이 잘리지 않으면서도
+  /// 위아래 공백을 최소화하여 시각적으로 꽉 차도록 초기 폰트 크기 배율 자동 산출
+  double _calculateInitialFontSizeScale({bool? includeMemo, int? fontIndex}) {
     final useMemo = includeMemo ?? _includeMemo;
     final mainText = _displayMainText;
     final bool hasSubMemo =
         _canToggleMemo && useMemo && widget.note.content.trim().isNotEmpty;
     final subText = hasSubMemo ? widget.note.content.trim() : null;
 
-    final int mainNewlines = '\n'.allMatches(mainText).length + 1;
-    final int subNewlines =
-        subText != null ? ('\n'.allMatches(subText).length + 1) : 0;
+    final selectedFont = kQuoteCardFonts[fontIndex ?? _selectedFontIndex];
+    final bool isHandwriting = selectedFont.name == '나눔손글씨';
+    final bool isQuoteOnly = subText == null;
 
-    // 본문: 한 줄에 대략 19~22자. 줄바꿈 및 글자 길이 중 더 큰 쪽을 줄 수로 추정
-    final double estimatedMainLines =
-        math.max(mainNewlines.toDouble(), mainText.length / 19.0);
-    // 서브 메모: 한 줄에 대략 23~26자
-    final double estimatedSubLines = subText != null
-        ? math.max(subNewlines.toDouble(), subText.length / 23.0)
-        : 0.0;
+    // 1:1 카드 내부 중앙 텍스트 영역의 가용 높이 (약 220px) 및 가용 너비 (약 295px)
+    const double availableHeight = 220.0;
+    const double availableWidth = 295.0;
 
-    // 서브 메모가 있는 경우 구분선 및 '생각 메모' 타이틀 높이(약 32px)를 1.8줄 분량으로 가산
-    final double totalEquivalentLines = estimatedMainLines +
-        (subText != null ? (estimatedSubLines + 1.8) : 0.0);
+    // 큰 배율부터 역순으로 탐색하여 잘리지 않고 가장 꽉 차는 최적 배율 채택
+    const List<double> candidateScales = [
+      1.10,
+      1.05,
+      1.00,
+      0.95,
+      0.90,
+      0.85,
+      0.80,
+      0.75,
+      0.70,
+      0.65,
+      0.60,
+      0.55,
+      0.50,
+    ];
 
-    if (totalEquivalentLines <= 4.0) {
-      return 1.0;
-    } else if (totalEquivalentLines <= 5.5) {
-      return 0.95;
-    } else if (totalEquivalentLines <= 7.0) {
-      return 0.90;
-    } else if (totalEquivalentLines <= 8.5) {
-      return 0.80;
-    } else if (totalEquivalentLines <= 10.5) {
-      return 0.70;
-    } else if (totalEquivalentLines <= 13.0) {
-      return 0.60;
-    } else {
-      return 0.55;
+    for (final scale in candidateScales) {
+      final double baseMainSize = isHandwriting
+          ? (isQuoteOnly ? 23.0 : 19.5)
+          : (isQuoteOnly ? 18.0 : 16.0);
+      final double mainFontSize = baseMainSize * scale;
+      final double mainLineHeight = mainFontSize * (isQuoteOnly ? 1.62 : 1.55);
+
+      // 한글 + 영문/기호/공백 혼합 시 평균 글자당 폭 (약 fontSize * 0.54)
+      final double mainCharsPerLine =
+          math.max(16.0, availableWidth / (mainFontSize * 0.54));
+
+      // 본문 문단별 줄 수 계산
+      double estimatedMainLines = 0;
+      final mainParagraphs = mainText.split('\n');
+      for (final para in mainParagraphs) {
+        if (para.trim().isEmpty) {
+          estimatedMainLines += 0.6;
+        } else {
+          // 따옴표 기호(“ ”) 폭 감안
+          final len = para.length +
+              (para == mainParagraphs.first ? 1 : 0) +
+              (para == mainParagraphs.last ? 1 : 0);
+          estimatedMainLines +=
+              math.max(1.0, (len / mainCharsPerLine).ceilToDouble());
+        }
+      }
+
+      double requiredHeight = estimatedMainLines * mainLineHeight;
+
+      // 생각 메모가 포함된 경우
+      if (subText != null) {
+        // 구분선 여백(14) + 라벨 높이(16) + 라벨 하단 여백(6) = 36px
+        const double memoHeaderHeight = 36.0;
+        final double baseSubSize = isHandwriting ? 15.0 : 12.5;
+        final double subFontSize = baseSubSize * scale;
+        final double subLineHeight = subFontSize * 1.5;
+
+        final double subCharsPerLine =
+            math.max(18.0, availableWidth / (subFontSize * 0.54));
+
+        double estimatedSubLines = 0;
+        final subParagraphs = subText.split('\n');
+        for (final para in subParagraphs) {
+          if (para.trim().isEmpty) {
+            estimatedSubLines += 0.6;
+          } else {
+            estimatedSubLines +=
+                math.max(1.0, (para.length / subCharsPerLine).ceilToDouble());
+          }
+        }
+
+        requiredHeight += memoHeaderHeight + (estimatedSubLines * subLineHeight);
+      }
+
+      // 가용 높이에 여유 있게 들어가면 해당 배율 채택
+      if (requiredHeight <= availableHeight) {
+        return scale;
+      }
     }
+
+    return 0.55;
   }
 
   Future<void> _pickCustomImage() async {
@@ -608,7 +664,14 @@ class _ShareableQuoteCardDialogState extends State<ShareableQuoteCardDialog>
                             fonts: kQuoteCardFonts,
                             selectedIndex: _selectedFontIndex,
                             onSelect: (index) {
-                              setState(() => _selectedFontIndex = index);
+                              setState(() {
+                                _selectedFontIndex = index;
+                                if (!_hasUserAdjustedFontSize) {
+                                  _fontSizeScale =
+                                      _calculateInitialFontSizeScale(
+                                          fontIndex: index);
+                                }
+                              });
                             },
                           ),
 

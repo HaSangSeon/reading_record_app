@@ -179,7 +179,10 @@ class QuoteCardPreview extends StatelessWidget {
 
                     // 2. 카드 컨텐츠 레이어
                     Padding(
-                      padding: const EdgeInsets.all(22),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 20,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -237,7 +240,7 @@ class QuoteCardPreview extends StatelessWidget {
                                       style: font.fontBuilder(
                                         color: effectiveTextColor,
                                         fontSize: mainFontSize,
-                                        height: isQuoteOnly ? 1.75 : 1.6,
+                                        height: isQuoteOnly ? 1.62 : 1.55,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: -0.3,
                                       ),
@@ -271,7 +274,7 @@ class QuoteCardPreview extends StatelessWidget {
                                         style: font.fontBuilder(
                                           color: effectiveSubTextColor,
                                           fontSize: subFontSize,
-                                          height: 1.55,
+                                          height: 1.5,
                                           fontWeight: FontWeight.normal,
                                         ),
                                       ),
