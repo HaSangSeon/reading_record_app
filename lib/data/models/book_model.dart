@@ -41,6 +41,9 @@ class Book extends HiveObject {
   @HiveField(11)
   final String memo;
 
+  @HiveField(12)
+  final DateTime? updatedAt;
+
   Book({
     required this.id,
     required this.title,
@@ -54,6 +57,7 @@ class Book extends HiveObject {
     this.completedAt,
     this.rating = 0.0,
     this.memo = '',
+    this.updatedAt,
   });
 
   /// 독서 진행률 (0.0 ~ 1.0)
@@ -81,6 +85,8 @@ class Book extends HiveObject {
     bool clearCompletedAt = false,
     double? rating,
     String? memo,
+    DateTime? updatedAt,
+    bool clearUpdatedAt = false,
   }) {
     return Book(
       id: id ?? this.id,
@@ -95,6 +101,7 @@ class Book extends HiveObject {
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
       rating: rating ?? this.rating,
       memo: memo ?? this.memo,
+      updatedAt: clearUpdatedAt ? null : (updatedAt ?? this.updatedAt),
     );
   }
 
@@ -113,6 +120,7 @@ class Book extends HiveObject {
       'completedAt': completedAt?.toIso8601String(),
       'rating': rating,
       'memo': memo,
+      'updatedAt': (updatedAt ?? createdAt).toIso8601String(),
     };
   }
 
@@ -133,6 +141,9 @@ class Book extends HiveObject {
           : null,
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
       memo: map['memo'] as String? ?? '',
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -144,9 +155,35 @@ class Book extends HiveObject {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Book && other.id == id;
+    return other is Book &&
+        other.id == id &&
+        other.title == title &&
+        other.author == author &&
+        other.publisher == publisher &&
+        other.coverUrl == coverUrl &&
+        other.totalPages == totalPages &&
+        other.readPages == readPages &&
+        other.isCompleted == isCompleted &&
+        other.createdAt == createdAt &&
+        other.completedAt == completedAt &&
+        other.rating == rating &&
+        other.memo == memo &&
+        other.updatedAt == updatedAt;
   }
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+    id,
+    title,
+    author,
+    publisher,
+    coverUrl,
+    totalPages,
+    readPages,
+    isCompleted,
+    completedAt,
+    rating,
+    memo,
+    updatedAt,
+  );
 }

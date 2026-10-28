@@ -17,9 +17,12 @@ class BookSearchService {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return [];
 
+    bool anyApiResponded = false;
+
     // 1. 카카오 도서 검색 API 시도 (가장 정확하고 고화질 표지 100% 제공)
     try {
       final kakaoResults = await _searchKakaoBooks(trimmed);
+      anyApiResponded = true;
       if (kakaoResults.isNotEmpty) return kakaoResults;
     } catch (_) {
       // 카카오 실패 시 폴백 진행
@@ -28,6 +31,7 @@ class BookSearchService {
     // 2. Google Books API 폴백 시도
     try {
       final googleResults = await _searchGoogleBooks(trimmed);
+      anyApiResponded = true;
       if (googleResults.isNotEmpty) return googleResults;
     } catch (_) {
       // Google Books 실패 시 폴백 진행
@@ -37,6 +41,10 @@ class BookSearchService {
     try {
       return await _searchOpenLibrary(trimmed);
     } catch (e) {
+      if (anyApiResponded) {
+        // 앞선 API에서 정상적으로 검색 결과 0건을 확인한 경우 에러 대신 빈 리스트 반환
+        return [];
+      }
       throw Exception('온라인 도서 검색 중 오류가 발생했습니다. 네트워크 연결을 확인해 주세요.');
     }
   }
@@ -61,7 +69,7 @@ class BookSearchService {
           .map((doc) => BookSearchResult.fromKakao(doc as Map<String, dynamic>))
           .toList();
     }
-    return [];
+    throw Exception('카카오 도서 검색 실패 (HTTP ${response.statusCode})');
   }
 
   /// Google Books API
@@ -85,7 +93,7 @@ class BookSearchService {
           )
           .toList();
     }
-    return [];
+    throw Exception('Google Books 검색 실패 (HTTP ${response.statusCode})');
   }
 
   /// Open Library API
@@ -109,6 +117,6 @@ class BookSearchService {
           )
           .toList();
     }
-    return [];
+    throw Exception('Open Library 검색 실패 (HTTP ${response.statusCode})');
   }
 }

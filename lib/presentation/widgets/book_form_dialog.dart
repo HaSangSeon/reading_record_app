@@ -1,15 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/ads/admob_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../providers/repository_providers.dart';
 import '../controllers/book_controller.dart';
 import 'book_completed_date_picker_dialog.dart';
+import 'book_cover_image.dart';
 import 'book_search_dialog.dart';
 
 class BookFormDialog extends ConsumerStatefulWidget {
@@ -100,6 +105,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
   late DateTime _completedAt;
   late double _rating;
   final ImagePicker _picker = ImagePicker();
+  String? _customCoverData;
+  bool _isCompressingImage = false;
 
   @override
   void initState() {
@@ -114,9 +121,18 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     _publisherController = TextEditingController(
       text: b?.publisher ?? widget.initialPublisher ?? '',
     );
-    _coverUrlController = TextEditingController(
-      text: b?.coverUrl ?? widget.initialCoverUrl ?? '',
-    );
+
+    final initialCover = b?.coverUrl ?? widget.initialCoverUrl ?? '';
+    if (initialCover.startsWith('data:image/') || initialCover.startsWith('data:')) {
+      _customCoverData = initialCover;
+      _coverUrlController = TextEditingController(text: '📷 직접 등록한 사진 표지');
+    } else if (initialCover.isNotEmpty && !initialCover.startsWith('http')) {
+      _customCoverData = initialCover;
+      _coverUrlController = TextEditingController(text: '📷 직접 등록한 사진 표지');
+    } else {
+      _coverUrlController = TextEditingController(text: initialCover);
+    }
+
     _memoController = TextEditingController(text: b?.memo ?? '');
 
     _isCompleted = b?.isCompleted ?? false;
@@ -143,12 +159,44 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
-        setState(() {
-          _coverUrlController.text = pickedFile.path;
-        });
+        setState(() => _isCompressingImage = true);
+
+        // 1. 고화질 사진을 가로 220px 초경량 고화질 썸네일(약 15~20KB)로 자동 압축
+        final rawBytes = await File(pickedFile.path).readAsBytes();
+        final decoded = img.decodeImage(rawBytes);
+
+        List<int> compressedBytes;
+        if (decoded != null) {
+          final resized = img.copyResize(decoded, width: 220);
+          compressedBytes = img.encodeJpg(resized, quality: 75);
+        } else {
+          compressedBytes = rawBytes;
+        }
+
+        // 2. Base64 data URI 생성 (Firestore 100% 무료 동기화 규격)
+        final dataUri =
+            'data:image/jpeg;base64,${base64Encode(compressedBytes)}';
+
+        // 3. 기기 로컬 앱 문서 폴더에도 안전 보관
+        final appDir = await getApplicationDocumentsDirectory();
+        final coversDir = Directory('${appDir.path}/covers');
+        if (!await coversDir.exists()) {
+          await coversDir.create(recursive: true);
+        }
+        final fileName = 'cover_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        await File('${coversDir.path}/$fileName').writeAsBytes(compressedBytes);
+
+        if (mounted) {
+          setState(() {
+            _customCoverData = dataUri;
+            _coverUrlController.text = '📷 직접 등록한 사진 표지';
+            _isCompressingImage = false;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isCompressingImage = false);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('이미지 가져오기 실패: $e')));
@@ -199,9 +247,13 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     final title = _titleController.text.trim();
     final author = _authorController.text.trim();
     final publisher = _publisherController.text.trim();
-    final coverUrl = _coverUrlController.text.trim().isEmpty
-        ? null
-        : _coverUrlController.text.trim();
+    final coverText = _coverUrlController.text.trim();
+    String? coverUrl;
+    if (_customCoverData != null && coverText == '📷 직접 등록한 사진 표지') {
+      coverUrl = _customCoverData;
+    } else if (coverText.isNotEmpty) {
+      coverUrl = coverText;
+    }
     final memo = _memoController.text.trim();
 
     final isEdit = widget.initialBook != null;
@@ -254,7 +306,8 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
       }
     }
 
-    final totalPages = widget.initialBook?.totalPages ?? 0;
+    final totalPages =
+        widget.initialBook?.totalPages ?? widget.initialTotalPages ?? 0;
     bool success;
 
     if (isEdit) {
@@ -587,6 +640,11 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     TextFormField(
                       controller: _coverUrlController,
                       maxLength: 1000,
+                      onChanged: (val) {
+                        if (val != '📷 직접 등록한 사진 표지') {
+                          setState(() => _customCoverData = null);
+                        }
+                      },
                       decoration: InputDecoration(
                         labelText: '표지 이미지 (URL 또는 사진 선택)',
                         hintText: 'https://... 또는 우측 버튼으로 사진 선택',
@@ -599,24 +657,75 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                         suffixIcon: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.add_a_photo_outlined,
-                                size: 20,
+                            if (_isCompressingImage)
+                              const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            else
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add_a_photo_outlined,
+                                  size: 20,
+                                ),
+                                tooltip: '사진 촬영 또는 갤러리 선택',
+                                onPressed: _showImageSourceDialog,
                               ),
-                              tooltip: '사진 촬영 또는 갤러리 선택',
-                              onPressed: _showImageSourceDialog,
-                            ),
                             if (_coverUrlController.text.isNotEmpty)
                               IconButton(
                                 icon: const Icon(Icons.clear, size: 18),
                                 onPressed: () =>
-                                    setState(() => _coverUrlController.clear()),
+                                    setState(() {
+                                      _customCoverData = null;
+                                      _coverUrlController.clear();
+                                    }),
                               ),
                           ],
                         ),
                       ),
                     ),
+                    if (_customCoverData != null || _coverUrlController.text.startsWith('http')) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: BookCoverImage(
+                              coverUrl: _customCoverData ?? _coverUrlController.text.trim(),
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.broken_image_rounded,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _customCoverData != null
+                                  ? '클라우드 초경량 자동 동기화 적용됨 (스마트폰·태블릿 공유)'
+                                  : '웹 표지 이미지 연결됨',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     // 별점 선택
                     Row(

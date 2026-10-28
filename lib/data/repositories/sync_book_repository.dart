@@ -34,6 +34,7 @@ class SyncBookRepository implements BookRepository {
   Future<void> addBook(Book book) async {
     // 1. 로컬에 즉시 저장 (0ms 지연없는 사용자 반응)
     await _hiveService.bookBox.put(book.id, book);
+    _firebaseService.clearLocalBookDeletion(_hiveService, book.id);
 
     // 2. 클라우드에 비동기 자동 저장
     _firebaseService.saveBook(book);
@@ -48,6 +49,7 @@ class SyncBookRepository implements BookRepository {
   Future<void> updateBook(Book book) async {
     // 1. 로컬에 즉시 저장
     await _hiveService.bookBox.put(book.id, book);
+    _firebaseService.clearLocalBookDeletion(_hiveService, book.id);
 
     // 2. 클라우드 비동기 업데이트
     _firebaseService.saveBook(book);
@@ -74,11 +76,15 @@ class SyncBookRepository implements BookRepository {
       await noteBox.deleteAll(keysToDelete);
     }
 
-    // 2. 클라우드에서도 책 및 연관 노트 삭제
-    _firebaseService.deleteBook(id);
-    _firebaseService.deleteNotesByBookId(id);
+    // 2. 로컬 툼스톤 기록 (오프라인 상태 삭제 후 재접속 시 좀비 부활 방지)
+    _firebaseService.recordLocalBookDeletion(_hiveService, id);
+    _firebaseService.recordLocalNoteDeletion(_hiveService, keysToDelete);
 
-    // 3. 오프라인 시 안내 알림
+    // 3. 클라우드에서도 책 및 연관 노트 소프트 딜리트
+    _firebaseService.deleteBook(id);
+    _firebaseService.deleteNotesByBookId(id, noteIds: keysToDelete);
+
+    // 4. 오프라인 시 안내 알림
     if (!_networkSyncService.isOnline) {
       _networkSyncService.notifyOfflineSaved(itemType: '도서');
     }

@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/book_model.dart';
 import '../../screens/book_detail_screen.dart';
+import '../book_cover_image.dart';
 
 class CalendarCompletedBookTile extends StatelessWidget {
   final Book book;
@@ -150,15 +150,8 @@ class CalendarCompletedBookTile extends StatelessWidget {
   }
 
   Widget _buildCoverImage(String url, Book book) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _buildCoverFallback(book),
-      );
-    }
-    return Image.file(
-      File(url),
+    return BookCoverImage(
+      coverUrl: url,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => _buildCoverFallback(book),
     );

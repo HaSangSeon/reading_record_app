@@ -34,8 +34,10 @@ class BookSearchController
     state = const AsyncValue.loading();
     try {
       final results = await _service.searchBooks(trimmed);
+      if (!mounted) return;
       state = AsyncValue.data(results);
     } catch (e, st) {
+      if (!mounted) return;
       state = AsyncValue.error(e, st);
     }
   }

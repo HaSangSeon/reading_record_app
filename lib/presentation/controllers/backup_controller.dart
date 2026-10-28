@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/hive_service.dart';
+import '../../core/services/firebase_service.dart';
 import '../../data/services/backup_service.dart';
 import '../../providers/repository_providers.dart';
 
@@ -63,6 +64,12 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
       final result = await _backupService.pickAndImportBackupFile(
         overwrite: overwrite,
       );
+      if (result.success) {
+        final fb = FirebaseService();
+        if (fb.isLinked) {
+          await fb.syncAllLocalToCloud(_hiveService);
+        }
+      }
       state = const AsyncValue.data(null);
       return result;
     } catch (e, st) {
@@ -82,6 +89,10 @@ class BackupController extends StateNotifier<AsyncValue<void>> {
         jsonString,
         overwrite: overwrite,
       );
+      final fb = FirebaseService();
+      if (fb.isLinked) {
+        await fb.syncAllLocalToCloud(_hiveService);
+      }
       state = const AsyncValue.data(null);
       return (
         success: true,

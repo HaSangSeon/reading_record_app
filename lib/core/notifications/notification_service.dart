@@ -140,10 +140,21 @@ class NotificationService {
   }) {
     final random = Random();
 
-    // 현재 읽고 있는 도서 (미완독 && 페이지 > 0)
-    final readingBooks = (books ?? [])
-        .where((b) => !b.isCompleted && b.readPages > 0)
-        .toList();
+    // books/notes가 전달되지 않은 경우에도 Hive에서 최신 서재 데이터를 자동 조회
+    List<Book> targetBooks = books ?? [];
+    if (books == null && Hive.isBoxOpen(AppConstants.bookBoxName)) {
+      targetBooks = Hive.box<Book>(AppConstants.bookBoxName).values.toList();
+    }
+
+    // 현재 읽고 있는 도서 (미완독 도서 전체, 최신 등록/수정순 정렬)
+    final readingBooks = targetBooks
+        .where((b) => !b.isCompleted)
+        .toList()
+      ..sort(
+        (a, b) => (b.updatedAt ?? b.createdAt).compareTo(
+          a.updatedAt ?? a.createdAt,
+        ),
+      );
 
     const weekdayNames = {
       1: '월요일',
@@ -166,17 +177,17 @@ class NotificationService {
       final templates = <String>[
         if (dayOfWeek == 1) ...[
           '새로운 한 주의 시작, 잠들기 전 《${selectedBook.title}》 한 장으로 마음을 차분히 정돈해 보세요 🌙',
-          '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 진행 중! 활기찬 한 주의 독서 습관을 시작해 보세요 📖',
+          '활기찬 한 주의 독서 습관! 오늘 밤 《${selectedBook.title}》과 함께 포근한 시간 어떠세요? 📖',
         ] else if (dayOfWeek == 5) ...[
           '한 주 동안 고생 많으셨어요! 불금의 밤, 《${selectedBook.title}》과 함께 포근한 쉼을 누려보세요 ✨',
-          '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 달성! 주말을 앞두고 잠시 책 속으로 여행을 떠나볼까요? 📚',
+          '주말을 앞둔 설레는 저녁, 《${selectedBook.title}》과 함께 책 속으로 여행을 떠나볼까요? 📚',
         ] else if (dayOfWeek == 6 || dayOfWeek == 7) ...[
           '여유로운 주말 저녁, 따뜻한 차 한 잔과 함께 《${selectedBook.title}》을 펼쳐보세요 ☕',
           '주말 독서 힐링 타임! 《${selectedBook.title}》의 다음 이야기가 기다리고 있어요 📖',
         ] else ...[
           '오늘 하루도 수고 많으셨어요. 잠들기 전 《${selectedBook.title}》과 함께 편안한 밤 보내세요 🌙',
-          '《${selectedBook.title}》 ${selectedBook.progressPercentage}% 진행 중! 잠들기 전 잠깐의 독서로 하루를 채워보세요 📖',
-          '바쁜 일상 속 작은 쉼표, 《${selectedBook.title}》과 함께 독서의 여유를 챙겨보세요 ✨',
+          '잠들기 전 10분의 여유, 《${selectedBook.title}》의 마음에 와닿는 구절을 만나보세요 📖',
+          '바쁜 일상 속 작은 쉼표, 《${selectedBook.title}》과 함께 독서의 즐거움을 챙겨보세요 ✨',
         ],
       ];
 

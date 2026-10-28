@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +9,7 @@ import '../controllers/theme_controller.dart';
 import '../widgets/action_bottom_sheet.dart';
 import '../widgets/app_bottom_nav_bar.dart';
 import '../widgets/book_completed_date_picker_dialog.dart';
+import '../widgets/book_cover_image.dart';
 import '../widgets/book_form_dialog.dart';
 import '../widgets/custom_confirm_dialog.dart';
 import '../widgets/note_card.dart';
@@ -372,27 +372,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    () {
-                      final cover = book.coverUrl;
-                      if (cover == null || cover.isEmpty) {
-                        return _buildFallbackCover(book, context);
-                      }
-                      if (cover.startsWith('http://') ||
-                          cover.startsWith('https://')) {
-                        return Image.network(
-                          cover,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              _buildFallbackCover(book, context),
-                        );
-                      }
-                      return Image.file(
-                        File(cover),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            _buildFallbackCover(book, context),
-                      );
-                    }(),
+                    BookCoverImage(
+                      coverUrl: book.coverUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          _buildFallbackCover(book, context),
+                    ),
                     // 책등(Spine) 음영 효과
                     Positioned(
                       left: 0,

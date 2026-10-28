@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -141,9 +142,127 @@ class FirebaseService {
     }
   }
 
+  // --- 실시간 다중 기기 동기화 리스너 ---
+  StreamSubscription? _booksSubscription;
+  StreamSubscription? _notesSubscription;
+
+  /// 다른 기기(태블릿 등)에서 변경/삭제한 사항을 실시간으로 로컬 Hive에 반영
+  void startRealtimeSync(HiveService hiveService) {
+    if (!_isInitialized || currentUserId == null || !isLinked) return;
+    stopRealtimeSync();
+
+    try {
+      final bookBox = hiveService.bookBox;
+      final noteBox = hiveService.noteBox;
+
+      _booksSubscription = _booksCollection().snapshots().listen(
+        (snapshot) {
+          for (final change in snapshot.docChanges) {
+            final data = change.doc.data();
+            if (data == null) continue;
+
+            final isDeleted = data['isDeleted'] == true;
+            final docId = change.doc.id;
+
+            if (isDeleted || change.type == DocumentChangeType.removed) {
+              final localBook = bookBox.get(docId);
+              if (localBook != null) {
+                final cloudDeletedTime = DateTime.tryParse(
+                  data['updatedAt']?.toString() ?? '',
+                );
+                final localTime = localBook.updatedAt ?? localBook.createdAt;
+                if (cloudDeletedTime == null ||
+                    !localTime.isAfter(cloudDeletedTime)) {
+                  bookBox.delete(docId);
+                  developer.log('Realtime delete book: $docId', name: 'FirebaseService');
+                }
+              }
+            } else {
+              try {
+                final cloudBook = Book.fromMap(data);
+                final localBook = bookBox.get(docId);
+                final cloudTime = cloudBook.updatedAt ?? cloudBook.createdAt;
+                final localTime = localBook != null
+                    ? (localBook.updatedAt ?? localBook.createdAt)
+                    : null;
+
+                if (localBook == null || cloudTime.isAfter(localTime!)) {
+                  bookBox.put(docId, cloudBook);
+                  developer.log('Realtime sync book: $docId', name: 'FirebaseService');
+                }
+              } catch (e) {
+                developer.log('Realtime book parse error: $e', name: 'FirebaseService');
+              }
+            }
+          }
+        },
+        onError: (e) {
+          developer.log('Books realtime sync error: $e', name: 'FirebaseService');
+        },
+      );
+
+      _notesSubscription = _notesCollection().snapshots().listen(
+        (snapshot) {
+          for (final change in snapshot.docChanges) {
+            final data = change.doc.data();
+            if (data == null) continue;
+
+            final isDeleted = data['isDeleted'] == true;
+            final docId = change.doc.id;
+
+            if (isDeleted || change.type == DocumentChangeType.removed) {
+              final localNote = noteBox.get(docId);
+              if (localNote != null) {
+                final cloudDeletedTime = DateTime.tryParse(
+                  data['updatedAt']?.toString() ?? '',
+                );
+                final localTime = localNote.updatedAt ?? localNote.createdAt;
+                if (cloudDeletedTime == null ||
+                    !localTime.isAfter(cloudDeletedTime)) {
+                  noteBox.delete(docId);
+                  developer.log('Realtime delete note: $docId', name: 'FirebaseService');
+                }
+              }
+            } else {
+              try {
+                final cloudNote = Note.fromMap(data);
+                final localNote = noteBox.get(docId);
+                final cloudTime = cloudNote.updatedAt ?? cloudNote.createdAt;
+                final localTime = localNote != null
+                    ? (localNote.updatedAt ?? localNote.createdAt)
+                    : null;
+
+                if (localNote == null || cloudTime.isAfter(localTime!)) {
+                  noteBox.put(docId, cloudNote);
+                  developer.log('Realtime sync note: $docId', name: 'FirebaseService');
+                }
+              } catch (e) {
+                developer.log('Realtime note parse error: $e', name: 'FirebaseService');
+              }
+            }
+          }
+        },
+        onError: (e) {
+          developer.log('Notes realtime sync error: $e', name: 'FirebaseService');
+        },
+      );
+      developer.log('Started realtime sync listeners.', name: 'FirebaseService');
+    } catch (e) {
+      developer.log('Failed to start realtime sync: $e', name: 'FirebaseService');
+    }
+  }
+
+  void stopRealtimeSync() {
+    _booksSubscription?.cancel();
+    _booksSubscription = null;
+    _notesSubscription?.cancel();
+    _notesSubscription = null;
+  }
+
   /// 구글 계정 연동을 해제하고 다시 익명 계정으로 돌아갑니다.
   Future<void> unlinkGoogle(HiveService hiveService) async {
     try {
+      stopRealtimeSync();
       await GoogleSignIn().signOut();
       await _auth.signOut();
       
@@ -180,8 +299,10 @@ class FirebaseService {
   Future<void> saveBook(Book book) async {
     if (!_isInitialized || currentUserId == null) return;
     try {
+      final map = book.toMap();
+      map['isDeleted'] = false;
       await _booksCollection().doc(book.id).set(
-            book.toMap(),
+            map,
             SetOptions(merge: true),
           );
     } catch (e) {
@@ -189,10 +310,15 @@ class FirebaseService {
     }
   }
 
+  /// 소프트 딜리트(Soft Delete): 클라우드에 삭제 상태를 기록하여 다른 기기에서도 부활하지 않고 안전하게 삭제되도록 함
   Future<void> deleteBook(String bookId) async {
     if (!_isInitialized || currentUserId == null) return;
     try {
-      await _booksCollection().doc(bookId).delete();
+      await _booksCollection().doc(bookId).set({
+        'id': bookId,
+        'isDeleted': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
     } catch (e) {
       developer.log('Error deleting book from Firestore: $e', name: 'FirebaseService');
     }
@@ -203,8 +329,10 @@ class FirebaseService {
   Future<void> saveNote(Note note) async {
     if (!_isInitialized || currentUserId == null) return;
     try {
+      final map = note.toMap();
+      map['isDeleted'] = false;
       await _notesCollection().doc(note.id).set(
-            note.toMap(),
+            map,
             SetOptions(merge: true),
           );
     } catch (e) {
@@ -212,27 +340,100 @@ class FirebaseService {
     }
   }
 
+  /// 소프트 딜리트(Soft Delete): 클라우드에 삭제 상태를 기록하여 다른 기기에서도 부활하지 않도록 함
   Future<void> deleteNote(String noteId) async {
     if (!_isInitialized || currentUserId == null) return;
     try {
-      await _notesCollection().doc(noteId).delete();
+      await _notesCollection().doc(noteId).set({
+        'id': noteId,
+        'isDeleted': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
     } catch (e) {
       developer.log('Error deleting note from Firestore: $e', name: 'FirebaseService');
     }
   }
 
-  Future<void> deleteNotesByBookId(String bookId) async {
+  static const String _deletedBooksKey = 'deleted_books_tombstones';
+  static const String _deletedNotesKey = 'deleted_notes_tombstones';
+
+  /// 로컬에서 삭제된 항목의 타임스탬프를 기록 (오프라인 상태 삭제 후 재접속 시 부활 방지)
+  Future<void> recordLocalBookDeletion(HiveService hiveService, String bookId) async {
+    try {
+      final box = hiveService.settingsBox;
+      final raw = box.get(_deletedBooksKey);
+      final map = raw is Map ? Map<String, String>.from(raw) : <String, String>{};
+      map[bookId] = DateTime.now().toIso8601String();
+      await box.put(_deletedBooksKey, map);
+    } catch (_) {}
+  }
+
+  Future<void> clearLocalBookDeletion(HiveService hiveService, String bookId) async {
+    try {
+      final box = hiveService.settingsBox;
+      final raw = box.get(_deletedBooksKey);
+      if (raw is Map && raw.containsKey(bookId)) {
+        final map = Map<String, String>.from(raw)..remove(bookId);
+        await box.put(_deletedBooksKey, map);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> recordLocalNoteDeletion(HiveService hiveService, List<String> noteIds) async {
+    if (noteIds.isEmpty) return;
+    try {
+      final box = hiveService.settingsBox;
+      final raw = box.get(_deletedNotesKey);
+      final map = raw is Map ? Map<String, String>.from(raw) : <String, String>{};
+      final now = DateTime.now().toIso8601String();
+      for (final id in noteIds) {
+        map[id] = now;
+      }
+      await box.put(_deletedNotesKey, map);
+    } catch (_) {}
+  }
+
+  Future<void> clearLocalNoteDeletion(HiveService hiveService, String noteId) async {
+    try {
+      final box = hiveService.settingsBox;
+      final raw = box.get(_deletedNotesKey);
+      if (raw is Map && raw.containsKey(noteId)) {
+        final map = Map<String, String>.from(raw)..remove(noteId);
+        await box.put(_deletedNotesKey, map);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> deleteNotesByBookId(
+    String bookId, {
+    List<String> noteIds = const [],
+  }) async {
     if (!_isInitialized || currentUserId == null) return;
     try {
-      final querySnapshot =
-          await _notesCollection().where('bookId', isEqualTo: bookId).get();
-      
-      final docs = querySnapshot.docs;
-      for (var i = 0; i < docs.length; i += 500) {
+      final nowIso = DateTime.now().toIso8601String();
+      final targetRefs = <String, DocumentReference<Map<String, dynamic>>>{
+        for (final id in noteIds) id: _notesCollection().doc(id),
+      };
+
+      try {
+        final querySnapshot =
+            await _notesCollection().where('bookId', isEqualTo: bookId).get();
+        for (final doc in querySnapshot.docs) {
+          targetRefs[doc.id] = doc.reference;
+        }
+      } catch (_) {
+        // 오프라인 등으로 쿼리 실패 시에도 전달받은 noteIds로 삭제 보장
+      }
+
+      final refs = targetRefs.values.toList();
+      for (var i = 0; i < refs.length; i += 500) {
         final batch = _firestore.batch();
-        final end = (i + 500 < docs.length) ? i + 500 : docs.length;
+        final end = (i + 500 < refs.length) ? i + 500 : refs.length;
         for (var j = i; j < end; j++) {
-          batch.delete(docs[j].reference);
+          batch.set(refs[j], {
+            'isDeleted': true,
+            'updatedAt': nowIso,
+          }, SetOptions(merge: true));
         }
         await batch.commit();
       }
@@ -246,9 +447,10 @@ class FirebaseService {
 
   // --- 양방향 초기 동기화 및 자동 복원 ---
 
-  /// 로컬 Hive와 Firestore 간의 초기 동기화를 수행합니다.
-  /// 1. 앱 재설치 등으로 로컬이 비어있고 클라우드에 데이터가 있으면 복원
-  /// 2. 로컬에 작성된 데이터가 있으면 클라우드에 업로드 백업
+  /// 로컬 Hive와 Firestore 간의 양방향 완전 무결성 동기화를 수행합니다.
+  /// 1. 클라우드에서 삭제(isDeleted: true)된 항목은 로컬에서도 안전 삭제 (좀비 데이터 부활 방지)
+  /// 2. 클라우드의 유효 데이터와 로컬 데이터를 타임스탬프(updatedAt) 기준으로 최신본 병합
+  /// 3. 로컬의 최신/신규 데이터만 클라우드로 업로드
   Future<SyncResult> initialSyncWithHive(HiveService hiveService) async {
     if (!_isInitialized || currentUserId == null) {
       return const SyncResult(
@@ -260,62 +462,247 @@ class FirebaseService {
     try {
       final bookBox = hiveService.bookBox;
       final noteBox = hiveService.noteBox;
+      final settingsBox = hiveService.settingsBox;
 
-      // 1. 클라우드에서 데이터 가져와서 로컬에 병합 (클라우드가 우선)
+      final rawDeletedBooks = settingsBox.get(_deletedBooksKey);
+      final localDeletedBooks = rawDeletedBooks is Map
+          ? Map<String, String>.from(rawDeletedBooks)
+          : <String, String>{};
+
+      final rawDeletedNotes = settingsBox.get(_deletedNotesKey);
+      final localDeletedNotes = rawDeletedNotes is Map
+          ? Map<String, String>.from(rawDeletedNotes)
+          : <String, String>{};
+
+      final pendingCloudBookDeletes = <String, String>{};
+      final pendingCloudNoteDeletes = <String, String>{};
+
+      // 1. 클라우드 데이터 전체 조회
       final cloudBooksSnapshot = await _booksCollection().get();
       final cloudNotesSnapshot = await _notesCollection().get();
 
+      final cloudBookDocMap = <String, Map<String, dynamic>>{};
       int booksDownloaded = 0;
+
       for (final doc in cloudBooksSnapshot.docs) {
-        try {
-          final book = Book.fromMap(doc.data());
-          await bookBox.put(book.id, book);
-          booksDownloaded++;
-        } catch (e) {
-          developer.log('Error parsing book (${doc.id}): $e', name: 'FirebaseService');
+        final data = doc.data();
+        cloudBookDocMap[doc.id] = data;
+
+        final isDeleted = data['isDeleted'] == true;
+        if (isDeleted) {
+          // 다른 기기에서 삭제된 항목 -> 로컬이 더 최신(백업 복원 등)이 아닌 경우에만 로컬에서 삭제
+          final localBook = bookBox.get(doc.id);
+          if (localBook != null) {
+            final cloudDeletedTime = DateTime.tryParse(
+              data['updatedAt']?.toString() ?? '',
+            );
+            final localTime = localBook.updatedAt ?? localBook.createdAt;
+            if (cloudDeletedTime == null ||
+                !localTime.isAfter(cloudDeletedTime)) {
+              await bookBox.delete(doc.id);
+            }
+          }
+        } else {
+          try {
+            final cloudBook = Book.fromMap(data);
+            final localBook = bookBox.get(cloudBook.id);
+            final cloudTime = cloudBook.updatedAt ?? cloudBook.createdAt;
+
+            // 오프라인 상태에서 로컬에서 삭제했던 도서인지 확인
+            final localDeletedIso = localDeletedBooks[cloudBook.id];
+            final localDeletedTime = localDeletedIso != null
+                ? DateTime.tryParse(localDeletedIso)
+                : null;
+
+            if (localBook == null &&
+                localDeletedTime != null &&
+                localDeletedTime.isAfter(cloudTime)) {
+              // 로컬에서 더 최근에 삭제된 항목 -> 클라우드에서 부활시키지 않고 클라우드도 삭제 마킹 예약
+              pendingCloudBookDeletes[cloudBook.id] = localDeletedIso!;
+            } else {
+              final localTime = localBook != null
+                  ? (localBook.updatedAt ?? localBook.createdAt)
+                  : null;
+
+              if (localBook == null || cloudTime.isAfter(localTime!)) {
+                await bookBox.put(cloudBook.id, cloudBook);
+                booksDownloaded++;
+              }
+            }
+          } catch (e) {
+            developer.log('Error parsing book (${doc.id}): $e', name: 'FirebaseService');
+          }
         }
       }
 
+      final cloudNoteDocMap = <String, Map<String, dynamic>>{};
       int notesDownloaded = 0;
+
       for (final doc in cloudNotesSnapshot.docs) {
-        try {
-          final note = Note.fromMap(doc.data());
-          await noteBox.put(note.id, note);
-          notesDownloaded++;
-        } catch (e) {
-          developer.log('Error parsing note (${doc.id}): $e', name: 'FirebaseService');
+        final data = doc.data();
+        cloudNoteDocMap[doc.id] = data;
+
+        final isDeleted = data['isDeleted'] == true;
+        if (isDeleted) {
+          final localNote = noteBox.get(doc.id);
+          if (localNote != null) {
+            final cloudDeletedTime = DateTime.tryParse(
+              data['updatedAt']?.toString() ?? '',
+            );
+            final localTime = localNote.updatedAt ?? localNote.createdAt;
+            if (cloudDeletedTime == null ||
+                !localTime.isAfter(cloudDeletedTime)) {
+              await noteBox.delete(doc.id);
+            }
+          }
+        } else {
+          try {
+            final cloudNote = Note.fromMap(data);
+            final localNote = noteBox.get(cloudNote.id);
+            final cloudTime = cloudNote.updatedAt ?? cloudNote.createdAt;
+
+            final localDeletedIso = localDeletedNotes[cloudNote.id];
+            final localDeletedTime = localDeletedIso != null
+                ? DateTime.tryParse(localDeletedIso)
+                : null;
+
+            if (localNote == null &&
+                localDeletedTime != null &&
+                localDeletedTime.isAfter(cloudTime)) {
+              pendingCloudNoteDeletes[cloudNote.id] = localDeletedIso!;
+            } else {
+              final localTime = localNote != null
+                  ? (localNote.updatedAt ?? localNote.createdAt)
+                  : null;
+
+              if (localNote == null || cloudTime.isAfter(localTime!)) {
+                await noteBox.put(cloudNote.id, cloudNote);
+                notesDownloaded++;
+              }
+            }
+          } catch (e) {
+            developer.log('Error parsing note (${doc.id}): $e', name: 'FirebaseService');
+          }
         }
       }
 
       developer.log(
-        'Restored/Merged $booksDownloaded books and $notesDownloaded notes from Cloud.',
+        'Synced from Cloud: $booksDownloaded books, $notesDownloaded notes downloaded/updated.',
         name: 'FirebaseService',
       );
 
-      // 2. 로컬에 있는 모든 데이터(방금 병합된 것 포함)를 다시 클라우드로 일괄 동기화
-      // (기기에만 있던 새 데이터가 있었다면 클라우드로 올라가게 됨)
-      final localBooks = bookBox.values.toList();
-      final localNotes = noteBox.values.toList();
+      // 2. 로컬 데이터 중 클라우드에 아직 없거나 로컬이 더 최신인 항목만 선별하여 클라우드로 업로드
+      final booksToUpload = <Book>[];
+      for (final book in bookBox.values) {
+        final cloudData = cloudBookDocMap[book.id];
+        if (cloudData == null) {
+          booksToUpload.add(book);
+        } else if (cloudData['isDeleted'] == true) {
+          final cloudDeletedTime = DateTime.tryParse(
+            cloudData['updatedAt']?.toString() ?? '',
+          );
+          final localTime = book.updatedAt ?? book.createdAt;
+          if (cloudDeletedTime != null && localTime.isAfter(cloudDeletedTime)) {
+            booksToUpload.add(book);
+          }
+        } else {
+          try {
+            final cloudBook = Book.fromMap(cloudData);
+            final cloudTime = cloudBook.updatedAt ?? cloudBook.createdAt;
+            final localTime = book.updatedAt ?? book.createdAt;
+            if (localTime.isAfter(cloudTime)) {
+              booksToUpload.add(book);
+            }
+          } catch (_) {
+            booksToUpload.add(book);
+          }
+        }
+      }
+
+      final notesToUpload = <Note>[];
+      for (final note in noteBox.values) {
+        final cloudData = cloudNoteDocMap[note.id];
+        if (cloudData == null) {
+          notesToUpload.add(note);
+        } else if (cloudData['isDeleted'] == true) {
+          final cloudDeletedTime = DateTime.tryParse(
+            cloudData['updatedAt']?.toString() ?? '',
+          );
+          final localTime = note.updatedAt ?? note.createdAt;
+          if (cloudDeletedTime != null && localTime.isAfter(cloudDeletedTime)) {
+            notesToUpload.add(note);
+          }
+        } else {
+          try {
+            final cloudNote = Note.fromMap(cloudData);
+            final cloudTime = cloudNote.updatedAt ?? cloudNote.createdAt;
+            final localTime = note.updatedAt ?? note.createdAt;
+            if (localTime.isAfter(cloudTime)) {
+              notesToUpload.add(note);
+            }
+          } catch (_) {
+            notesToUpload.add(note);
+          }
+        }
+      }
+
       int booksUploaded = 0;
       int notesUploaded = 0;
 
-      if (localBooks.isNotEmpty || localNotes.isNotEmpty) {
+      if (booksToUpload.isNotEmpty ||
+          notesToUpload.isNotEmpty ||
+          pendingCloudBookDeletes.isNotEmpty ||
+          pendingCloudNoteDeletes.isNotEmpty) {
         final allOperations = <void Function(WriteBatch)>[
-          ...localBooks.map((book) {
+          ...booksToUpload.map((book) {
             booksUploaded++;
-            return (WriteBatch batch) => batch.set(
-              _booksCollection().doc(book.id),
-              book.toMap(),
-              SetOptions(merge: true),
-            );
+            return (WriteBatch batch) {
+              final map = book.toMap();
+              map['isDeleted'] = false;
+              batch.set(
+                _booksCollection().doc(book.id),
+                map,
+                SetOptions(merge: true),
+              );
+            };
           }),
-          ...localNotes.map((note) {
+          ...notesToUpload.map((note) {
             notesUploaded++;
-            return (WriteBatch batch) => batch.set(
-              _notesCollection().doc(note.id),
-              note.toMap(),
-              SetOptions(merge: true),
-            );
+            return (WriteBatch batch) {
+              final map = note.toMap();
+              map['isDeleted'] = false;
+              batch.set(
+                _notesCollection().doc(note.id),
+                map,
+                SetOptions(merge: true),
+              );
+            };
+          }),
+          ...pendingCloudBookDeletes.entries.map((entry) {
+            return (WriteBatch batch) {
+              batch.set(
+                _booksCollection().doc(entry.key),
+                {
+                  'id': entry.key,
+                  'isDeleted': true,
+                  'updatedAt': entry.value,
+                },
+                SetOptions(merge: true),
+              );
+            };
+          }),
+          ...pendingCloudNoteDeletes.entries.map((entry) {
+            return (WriteBatch batch) {
+              batch.set(
+                _notesCollection().doc(entry.key),
+                {
+                  'id': entry.key,
+                  'isDeleted': true,
+                  'updatedAt': entry.value,
+                },
+                SetOptions(merge: true),
+              );
+            };
           }),
         ];
 
@@ -328,9 +715,14 @@ class FirebaseService {
           await batch.commit();
         }
         developer.log(
-          'Synced/Pushed $booksUploaded books and $notesUploaded notes back to Cloud.',
+          'Pushed $booksUploaded books, $notesUploaded notes to Cloud.',
           name: 'FirebaseService',
         );
+      }
+
+      // 연동된 계정인 경우 백그라운드 실시간 동기화 리스너 활성화
+      if (isLinked) {
+        startRealtimeSync(hiveService);
       }
 
       return SyncResult(
@@ -369,47 +761,6 @@ class FirebaseService {
         errorMessage: 'Firebase에 연결되지 않았습니다.',
       );
     }
-    try {
-      final localBooks = hiveService.bookBox.values.toList();
-      final localNotes = hiveService.noteBox.values.toList();
-
-      final allOperations = [
-        ...localBooks.map((book) => () {
-          return (WriteBatch batch) => batch.set(
-            _booksCollection().doc(book.id),
-            book.toMap(),
-            SetOptions(merge: true),
-          );
-        }),
-        ...localNotes.map((note) => () {
-          return (WriteBatch batch) => batch.set(
-            _notesCollection().doc(note.id),
-            note.toMap(),
-            SetOptions(merge: true),
-          );
-        }),
-      ];
-
-      for (var i = 0; i < allOperations.length; i += 500) {
-        final batch = _firestore.batch();
-        final end = (i + 500 < allOperations.length) ? i + 500 : allOperations.length;
-        for (var j = i; j < end; j++) {
-          allOperations[j]()(batch);
-        }
-        await batch.commit();
-      }
-      developer.log('Batch re-sync completed successfully.', name: 'FirebaseService');
-      return SyncResult(
-        success: true,
-        booksUploaded: localBooks.length,
-        notesUploaded: localNotes.length,
-      );
-    } catch (e) {
-      developer.log('Batch re-sync error: $e', name: 'FirebaseService');
-      return SyncResult(
-        success: false,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
-      );
-    }
+    return await initialSyncWithHive(hiveService);
   }
 }

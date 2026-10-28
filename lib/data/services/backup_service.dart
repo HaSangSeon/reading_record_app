@@ -152,12 +152,13 @@ class BackupService {
       await _hiveService.noteBox.clear();
     }
 
+    final now = DateTime.now();
     int booksCount = 0;
     for (final rawBook in booksList) {
       if (rawBook is Map) {
         try {
           final bookMap = Map<String, dynamic>.from(rawBook);
-          final book = Book.fromMap(bookMap);
+          final book = Book.fromMap(bookMap).copyWith(updatedAt: now);
           await _hiveService.bookBox.put(book.id, book);
           booksCount++;
         } catch (e) {
@@ -171,7 +172,7 @@ class BackupService {
       if (rawNote is Map) {
         try {
           final noteMap = Map<String, dynamic>.from(rawNote);
-          final note = Note.fromMap(noteMap);
+          final note = Note.fromMap(noteMap).copyWith(updatedAt: now);
           await _hiveService.noteBox.put(note.id, note);
           notesCount++;
         } catch (e) {

@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
+import 'book_cover_image.dart';
 
 /// 도서 및 독서 기록용 프리미엄 액션 모달 바텀시트 유틸리티
 class ActionBottomSheet {
@@ -635,25 +635,14 @@ class ActionBottomSheet {
   }
 
   static Widget _buildMiniCover(String? cover, bool isCompleted) {
-    if (cover != null && cover.isNotEmpty) {
-      if (cover.startsWith('http://') || cover.startsWith('https://')) {
-        return Image.network(
-          cover,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const Icon(Icons.book_rounded, size: 20),
-        );
-      } else {
-        return Image.file(
-          File(cover),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const Icon(Icons.book_rounded, size: 20),
-        );
-      }
-    }
-    return Icon(
-      isCompleted ? Icons.auto_stories_rounded : Icons.menu_book_rounded,
-      color: AppTheme.primaryColor,
-      size: 18,
+    return BookCoverImage(
+      coverUrl: cover,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Icon(
+        isCompleted ? Icons.auto_stories_rounded : Icons.menu_book_rounded,
+        color: AppTheme.primaryColor,
+        size: 18,
+      ),
     );
   }
 }

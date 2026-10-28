@@ -65,7 +65,7 @@ class Note extends HiveObject {
       'pageNumber': pageNumber,
       'content': content,
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'updatedAt': (updatedAt ?? createdAt).toIso8601String(),
       'quotation': quotation,
     };
   }
@@ -93,9 +93,24 @@ class Note extends HiveObject {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Note && other.id == id;
+    return other is Note &&
+        other.id == id &&
+        other.bookId == bookId &&
+        other.pageNumber == pageNumber &&
+        other.content == content &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt &&
+        other.quotation == quotation;
   }
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+    id,
+    bookId,
+    pageNumber,
+    content,
+    createdAt,
+    updatedAt,
+    quotation,
+  );
 }

@@ -1,4 +1,3 @@
-import "dart:io";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:intl/intl.dart";
@@ -7,6 +6,7 @@ import "../../data/models/book_model.dart";
 import "../controllers/book_controller.dart";
 import "../screens/book_detail_screen.dart";
 import "action_bottom_sheet.dart";
+import "book_cover_image.dart";
 import "book_form_dialog.dart";
 import "custom_confirm_dialog.dart";
 
@@ -162,24 +162,11 @@ class BookCard extends ConsumerWidget {
     final cover = book.coverUrl;
     final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
 
-    Widget imageContent;
-    if (cover != null && cover.isNotEmpty) {
-      if (cover.startsWith("http://") || cover.startsWith("https://")) {
-        imageContent = Image.network(
-          cover,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _buildFallbackCover(isDark, primary),
-        );
-      } else {
-        imageContent = Image.file(
-          File(cover),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _buildFallbackCover(isDark, primary),
-        );
-      }
-    } else {
-      imageContent = _buildFallbackCover(isDark, primary);
-    }
+    final imageContent = BookCoverImage(
+      coverUrl: cover,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _buildFallbackCover(isDark, primary),
+    );
 
     return Container(
       width: 68,

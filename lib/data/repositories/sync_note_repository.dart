@@ -46,6 +46,7 @@ class SyncNoteRepository implements NoteRepository {
   Future<void> addNote(Note note) async {
     // 1. 로컬에 즉시 저장
     await _hiveService.noteBox.put(note.id, note);
+    _firebaseService.clearLocalNoteDeletion(_hiveService, note.id);
 
     // 2. 클라우드에 비동기 자동 저장
     _firebaseService.saveNote(note);
@@ -60,6 +61,7 @@ class SyncNoteRepository implements NoteRepository {
   Future<void> updateNote(Note note) async {
     // 1. 로컬에 즉시 저장
     await _hiveService.noteBox.put(note.id, note);
+    _firebaseService.clearLocalNoteDeletion(_hiveService, note.id);
 
     // 2. 클라우드 비동기 업데이트
     _firebaseService.saveNote(note);
@@ -75,10 +77,13 @@ class SyncNoteRepository implements NoteRepository {
     // 1. 로컬 삭제
     await _hiveService.noteBox.delete(id);
 
-    // 2. 클라우드 삭제
+    // 2. 로컬 툼스톤 기록 (오프라인 상태 삭제 후 재접속 시 좀비 부활 방지)
+    _firebaseService.recordLocalNoteDeletion(_hiveService, [id]);
+
+    // 3. 클라우드 소프트 딜리트
     _firebaseService.deleteNote(id);
 
-    // 3. 오프라인 시 안내 알림
+    // 4. 오프라인 시 안내 알림
     if (!_networkSyncService.isOnline) {
       _networkSyncService.notifyOfflineSaved(itemType: '독서 메모');
     }
@@ -96,7 +101,8 @@ class SyncNoteRepository implements NoteRepository {
       await box.deleteAll(keysToDelete);
     }
 
-    _firebaseService.deleteNotesByBookId(bookId);
+    _firebaseService.recordLocalNoteDeletion(_hiveService, keysToDelete);
+    _firebaseService.deleteNotesByBookId(bookId, noteIds: keysToDelete);
 
     if (!_networkSyncService.isOnline) {
       _networkSyncService.notifyOfflineSaved(itemType: '독서 메모');

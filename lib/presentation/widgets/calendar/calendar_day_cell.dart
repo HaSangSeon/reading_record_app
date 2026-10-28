@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/book_model.dart';
 import '../../../data/models/note_model.dart';
+import '../book_cover_image.dart';
 
 class CalendarDayCell extends StatelessWidget {
   final int day;
@@ -256,17 +256,10 @@ class CalendarDayCell extends StatelessWidget {
     );
   }
 
-  /// 웹 이미지 및 로컬 기기 파일 이미지 안전 렌더링
+  /// 웹 이미지 및 초경량 Base64, 로컬 기기 파일 이미지 안전 렌더링
   Widget _buildImage(String url, Book book, bool isDark) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _buildCoverFallback(book, isDark),
-      );
-    }
-    return Image.file(
-      File(url),
+    return BookCoverImage(
+      coverUrl: url,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => _buildCoverFallback(book, isDark),
     );

@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/book_model.dart';
 import '../../screens/book_detail_screen.dart';
+import '../book_cover_image.dart';
 
 /// 5. 인생 도서 & 높은 평점 카드 (평점 4.0 이상 상위 5권)
 class StatsTopRatedBooksCard extends StatelessWidget {
@@ -86,38 +86,17 @@ class StatsTopRatedBooksCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               clipBehavior: Clip.antiAlias,
-              child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                  ? (book.coverUrl!.startsWith('http://') ||
-                          book.coverUrl!.startsWith('https://')
-                      ? Image.network(
-                          book.coverUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Icon(
-                            Icons.menu_book_rounded,
-                            size: 16,
-                            color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
-                          ),
-                        )
-                      : Image.file(
-                          File(book.coverUrl!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Icon(
-                            Icons.menu_book_rounded,
-                            size: 16,
-                            color: isDark
-                                ? AppTheme.primaryLight
-                                : AppTheme.primaryColor,
-                          ),
-                        ))
-                  : Icon(
-                      Icons.menu_book_rounded,
-                      size: 16,
-                      color: isDark
-                          ? AppTheme.primaryLight
-                          : AppTheme.primaryColor,
-                    ),
+              child: BookCoverImage(
+                coverUrl: book.coverUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Icon(
+                  Icons.menu_book_rounded,
+                  size: 16,
+                  color: isDark
+                      ? AppTheme.primaryLight
+                      : AppTheme.primaryColor,
+                ),
+              ),
             ),
 
             const SizedBox(width: 10),

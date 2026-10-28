@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/notifications/notification_service.dart';
 import '../../data/models/book_model.dart';
 import '../../data/models/note_model.dart';
 import '../../domain/repositories/book_repository.dart';
@@ -162,6 +163,7 @@ class NoteController extends StateNotifier<AsyncValue<void>> {
         content: content.trim(),
         quotation: quotation.trim(),
         createdAt: now,
+        updatedAt: now,
       );
 
       await _noteRepository.addNote(newNote);
@@ -177,11 +179,13 @@ class NoteController extends StateNotifier<AsyncValue<void>> {
               readPages: pageNumber,
               isCompleted: isCompleted || book.isCompleted,
               completedAt: isCompleted ? (book.completedAt ?? now) : null,
+              updatedAt: now,
             ),
           );
         }
       }
 
+      _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -194,7 +198,9 @@ class NoteController extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateNote(Note updatedNote) async {
     state = const AsyncValue.loading();
     try {
-      await _noteRepository.updateNote(updatedNote);
+      final withTimestamp = updatedNote.copyWith(updatedAt: DateTime.now());
+      await _noteRepository.updateNote(withTimestamp);
+      _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -208,11 +214,17 @@ class NoteController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await _noteRepository.deleteNote(noteId);
+      _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return false;
     }
+  }
+
+  /// 알림이 활성화되어 있을 경우 백그라운드에서 최신 도서 정보를 리마인더에 반영
+  void _refreshReminderAsync() {
+    NotificationService().rescheduleIfEnabled().catchError((_) {});
   }
 }

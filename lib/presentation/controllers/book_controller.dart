@@ -84,6 +84,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
         completedAt: effectiveCompleted ? (completedAt ?? now) : null,
         rating: rating,
         memo: memo.trim(),
+        updatedAt: now,
       );
 
       await _bookRepository.addBook(newBook);
@@ -100,7 +101,8 @@ class BookController extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateBook(Book book) async {
     state = const AsyncValue.loading();
     try {
-      await _bookRepository.updateBook(book);
+      final withTimestamp = book.copyWith(updatedAt: DateTime.now());
+      await _bookRepository.updateBook(withTimestamp);
       _refreshReminderAsync();
       state = const AsyncValue.data(null);
       return true;
@@ -136,6 +138,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
       isCompleted: isNowCompleted,
       completedAt: isNowCompleted ? (book.completedAt ?? DateTime.now()) : null,
       clearCompletedAt: !isNowCompleted,
+      updatedAt: DateTime.now(),
     );
 
     await _bookRepository.updateBook(updated);
@@ -153,6 +156,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
       readPages: willBeCompleted ? book.totalPages : book.readPages,
       completedAt: willBeCompleted ? (book.completedAt ?? DateTime.now()) : null,
       clearCompletedAt: !willBeCompleted,
+      updatedAt: DateTime.now(),
     );
 
     await _bookRepository.updateBook(updated);
@@ -167,6 +171,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     final updated = book.copyWith(
       completedAt: completedAt,
       clearCompletedAt: completedAt == null,
+      updatedAt: DateTime.now(),
     );
 
     await _bookRepository.updateBook(updated);

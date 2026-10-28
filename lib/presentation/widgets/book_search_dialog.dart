@@ -431,11 +431,18 @@ class _BookSearchDialogState extends ConsumerState<BookSearchDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // 상세 입력 후 등록
+                    // 상세 입력 후 등록 (신규 등록 모드로 열림)
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        BookFormDialog.show(context, book: item.toBook());
+                        BookFormDialog.show(
+                          context,
+                          title: item.title,
+                          author: item.author,
+                          publisher: item.publisher,
+                          coverUrl: item.coverUrl,
+                          totalPages: item.totalPages,
+                        );
                       },
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10),

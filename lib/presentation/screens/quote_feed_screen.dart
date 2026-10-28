@@ -1,4 +1,3 @@
-import "dart:io";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:intl/intl.dart";
@@ -9,6 +8,7 @@ import "../../providers/repository_providers.dart";
 import "../controllers/note_controller.dart";
 import "../controllers/theme_controller.dart";
 import "../widgets/action_bottom_sheet.dart";
+import "../widgets/book_cover_image.dart";
 import "../widgets/custom_confirm_dialog.dart";
 import "../widgets/home/add_book_options_sheet.dart";
 import "../widgets/note_form_dialog.dart";
@@ -527,25 +527,15 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(3),
-                    child: coverUrl.startsWith('http')
-                        ? Image.network(
-                            coverUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.book_rounded,
-                              size: 13,
-                              color: isSelected ? Colors.white70 : primary,
-                            ),
-                          )
-                        : Image.file(
-                            File(coverUrl),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.book_rounded,
-                              size: 13,
-                              color: isSelected ? Colors.white70 : primary,
-                            ),
-                          ),
+                    child: BookCoverImage(
+                      coverUrl: coverUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.book_rounded,
+                        size: 13,
+                        color: isSelected ? Colors.white70 : primary,
+                      ),
+                    ),
                   ),
                 )
               else if (icon != null)
@@ -961,22 +951,8 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
   }
 
   Widget _buildMiniCover(String? coverUrl) {
-    if (coverUrl == null || coverUrl.isEmpty) {
-      return const Center(
-        child: Icon(Icons.book_rounded, size: 18, color: Colors.grey),
-      );
-    }
-    if (coverUrl.startsWith("http://") || coverUrl.startsWith("https://")) {
-      return Image.network(
-        coverUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const Center(
-          child: Icon(Icons.book_rounded, size: 18, color: Colors.grey),
-        ),
-      );
-    }
-    return Image.file(
-      File(coverUrl),
+    return BookCoverImage(
+      coverUrl: coverUrl,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => const Center(
         child: Icon(Icons.book_rounded, size: 18, color: Colors.grey),

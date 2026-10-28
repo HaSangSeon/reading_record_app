@@ -38,8 +38,9 @@ class BookSearchResult {
       readPages: readPages,
       isCompleted: isCompleted,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
       rating: rating,
-      memo: memo.isNotEmpty ? memo : description,
+      memo: memo,
     );
   }
 
