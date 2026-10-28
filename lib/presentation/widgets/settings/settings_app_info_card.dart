@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -55,13 +56,21 @@ class SettingsAppInfoCard extends StatelessWidget {
                 const Expanded(
                   child: Text('앱 버전', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 ),
-                const Text(
-                  AppConstants.versionDisplay,
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final versionStr = snapshot.hasData
+                        ? 'v${snapshot.data!.version} (Build ${snapshot.data!.buildNumber})'
+                        : AppConstants.versionDisplay;
+                    return Text(
+                      versionStr,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 8),
                 Container(
