@@ -9,6 +9,7 @@ import '../controllers/note_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../widgets/action_bottom_sheet.dart';
 import '../widgets/app_bottom_nav_bar.dart';
+import '../widgets/book_completed_date_picker_dialog.dart';
 import '../widgets/book_form_dialog.dart';
 import '../widgets/custom_confirm_dialog.dart';
 import '../widgets/note_card.dart';
@@ -96,7 +97,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                       BookFormDialog.show(context, book: book);
                     },
                     onDelete: () {
-                      _showDeleteConfirm(context, ref, book);
+                      _showDeleteConfirm(
+                        context,
+                        ref,
+                        book,
+                        notesAsync.value?.length ?? 0,
+                      );
                     },
                   );
                 },
@@ -479,15 +485,84 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                         ],
                       ),
                     const SizedBox(height: 6),
-                    Text(
-                      '등록일 $registeredDate',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppTheme.darkTextLight
-                            : AppTheme.textLight,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          '등록일 $registeredDate',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark
+                                ? AppTheme.darkTextLight
+                                : AppTheme.textLight,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (book.isCompleted) ...[
+                          Text(
+                            '•',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isDark
+                                  ? AppTheme.darkTextLight
+                                  : AppTheme.textLight,
+                            ),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showCompletedDatePicker(context, ref, book),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.successColor.withValues(
+                                    alpha: isDark ? 0.2 : 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppTheme.successColor.withValues(
+                                      alpha: isDark ? 0.45 : 0.3,
+                                    ),
+                                    width: 0.9,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.event_available_rounded,
+                                      size: 13,
+                                      color: AppTheme.successColor,
+                                    ),
+                                    const SizedBox(width: 4.5),
+                                    Text(
+                                      '완독일 ${book.completedAt != null ? dateFormat.format(book.completedAt!) : registeredDate}',
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppTheme.successColor,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.edit_calendar_rounded,
+                                      size: 12,
+                                      color: AppTheme.successColor.withValues(alpha: 0.9),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -737,16 +812,57 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     );
   }
 
-  Future<void> _showDeleteConfirm(
+  Future<void> _showCompletedDatePicker(
     BuildContext context,
     WidgetRef ref,
     Book book,
   ) async {
+    final initialDate = book.completedAt ?? DateTime.now();
+
+    final picked = await BookCompletedDatePickerDialog.show(
+      context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      title: '완독 날짜 선택',
+      confirmText: '완독일 변경',
+    );
+
+    if (picked != null) {
+      await ref
+          .read(bookControllerProvider.notifier)
+          .updateCompletedAt(book.id, picked);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '완독일이 ${DateFormat('yyyy년 M월 d일').format(picked)}로 변경되었습니다. ✨',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: AppTheme.successColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showDeleteConfirm(
+    BuildContext context,
+    WidgetRef ref,
+    Book book,
+    int noteCount,
+  ) async {
+    final noteInfo = noteCount > 0 ? '$noteCount개의 독서 기록 및 메모' : '모든 독서 정보';
     final confirmed = await CustomConfirmDialog.show(
       context,
       title: '도서를 삭제하시겠습니까?',
       highlightedTarget: book.title,
-      message: '이 책과 함께 작성된 모든 독서 기록(${book.readPages}p)이 영구히 삭제됩니다.',
+      message: '이 책과 함께 작성된 $noteInfo가 영구히 삭제됩니다.',
       confirmText: '도서 삭제',
       isDestructive: true,
       icon: Icons.delete_forever_rounded,

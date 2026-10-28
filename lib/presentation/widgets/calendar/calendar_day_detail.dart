@@ -28,6 +28,7 @@ class CalendarDayDetail extends StatelessWidget {
     final weekdayName = _weekdays[selectedDay.weekday % 7];
     final dateFormatted =
         '${selectedDay.month}월 ${selectedDay.day}일 ($weekdayName)';
+    final bookMap = {for (final b in allBooks) b.id: b};
     final hasData = completedBooks.isNotEmpty || notes.isNotEmpty;
 
     return Container(
@@ -156,15 +157,13 @@ class CalendarDayDetail extends StatelessWidget {
               const SizedBox(height: 8),
               ...notes.map(
                 (note) {
-                  final relatedBook = allBooks.firstWhere(
-                    (b) => b.id == note.bookId,
-                    orElse: () => Book(
-                      id: note.bookId,
-                      title: '도서 정보 없음',
-                      author: '',
-                      createdAt: note.createdAt,
-                    ),
-                  );
+                  final relatedBook = bookMap[note.bookId] ??
+                      Book(
+                        id: note.bookId,
+                        title: '삭제되었거나 알 수 없는 도서',
+                        author: '',
+                        createdAt: note.createdAt,
+                      );
                   return CalendarNoteTile(
                     note: note,
                     relatedBook: relatedBook,

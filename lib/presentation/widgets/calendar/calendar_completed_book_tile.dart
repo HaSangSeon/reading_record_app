@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/book_model.dart';
@@ -58,11 +59,7 @@ class CalendarCompletedBookTile extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: hasCover
-                      ? Image.network(
-                          book.coverUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildCoverFallback(book),
-                        )
+                      ? _buildCoverImage(book.coverUrl!, book)
                       : _buildCoverFallback(book),
                 ),
               ),
@@ -149,6 +146,21 @@ class CalendarCompletedBookTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCoverImage(String url, Book book) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _buildCoverFallback(book),
+      );
+    }
+    return Image.file(
+      File(url),
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _buildCoverFallback(book),
     );
   }
 

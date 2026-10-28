@@ -51,7 +51,7 @@ class ActionBottomSheet {
             children: [
               // 1. 상단 전용 헤더 배너 (배경색 구분 + 드래그 핸들 + 도서 요약 정보)
               Container(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+                padding: const EdgeInsets.fromLTRB(18, 12, 12, 16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isDark
@@ -215,6 +215,29 @@ class ActionBottomSheet {
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        // 상단 우측 닫기(X) 버튼
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -350,7 +373,7 @@ class ActionBottomSheet {
             children: [
               // 1. 상단 전용 헤더 배너 (보랏빛 배경색 구분 + 드래그 핸들 + 기록 요약 정보)
               Container(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+                padding: const EdgeInsets.fromLTRB(18, 12, 12, 16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isDark
@@ -438,6 +461,29 @@ class ActionBottomSheet {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // 상단 우측 닫기(X) 버튼
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.textSecondary,
+                            ),
                           ),
                         ),
                       ],

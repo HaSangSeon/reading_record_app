@@ -339,7 +339,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   slivers: [
                     // 독서 통계 배너
-                    SliverToBoxAdapter(child: StatsHeader(books: books)),
+                    SliverToBoxAdapter(
+                      child: StatsHeader(books: allBooksAsync.value ?? books),
+                    ),
 
                     // 프리미엄 일체형 세그먼트 필터 바 (전체 / 읽는 중 / 완독)
                     SliverToBoxAdapter(

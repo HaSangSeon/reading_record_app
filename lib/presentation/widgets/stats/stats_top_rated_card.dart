@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/book_model.dart';
@@ -86,17 +87,30 @@ class StatsTopRatedBooksCard extends StatelessWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                  ? Image.network(
-                      book.coverUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Icon(
-                        Icons.menu_book_rounded,
-                        size: 16,
-                        color: isDark
-                            ? AppTheme.primaryLight
-                            : AppTheme.primaryColor,
-                      ),
-                    )
+                  ? (book.coverUrl!.startsWith('http://') ||
+                          book.coverUrl!.startsWith('https://')
+                      ? Image.network(
+                          book.coverUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.menu_book_rounded,
+                            size: 16,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
+                          ),
+                        )
+                      : Image.file(
+                          File(book.coverUrl!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.menu_book_rounded,
+                            size: 16,
+                            color: isDark
+                                ? AppTheme.primaryLight
+                                : AppTheme.primaryColor,
+                          ),
+                        ))
                   : Icon(
                       Icons.menu_book_rounded,
                       size: 16,

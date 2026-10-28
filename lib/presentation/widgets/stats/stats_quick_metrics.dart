@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// 2. 빠른 지표 행 (읽은 페이지, 독서 노트, 평균 평점 3개 카드)
+/// 2. 빠른 지표 행 (완독 도서, 독서 기록, 평균 평점 3개 카드)
 class StatsQuickMetricsRow extends StatelessWidget {
-  final int totalPages;
+  final int completedBooks;
   final int totalNotes;
   final double avgRating;
 
   const StatsQuickMetricsRow({
     super.key,
-    required this.totalPages,
+    required this.completedBooks,
     required this.totalNotes,
     required this.avgRating,
   });
@@ -105,31 +104,29 @@ class StatsQuickMetricsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final numberFormat = NumberFormat("#,###");
-    final pagesStr = numberFormat.format(totalPages);
 
     return Row(
       children: [
         Expanded(
           child: _buildMetricCard(
-            icon: Icons.menu_book_rounded,
-            iconColor: const Color(0xFF3B82F6),
-            iconBg: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-            value: pagesStr,
-            unit: "p",
-            label: "읽은 페이지",
+            icon: Icons.task_alt_rounded,
+            iconColor: const Color(0xFF10B981),
+            iconBg: const Color(0xFF10B981).withValues(alpha: 0.12),
+            value: "$completedBooks",
+            unit: "권",
+            label: "완독 도서",
             isDark: isDark,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _buildMetricCard(
-            icon: Icons.mode_edit_outline_rounded,
-            iconColor: const Color(0xFF10B981),
-            iconBg: const Color(0xFF10B981).withValues(alpha: 0.12),
+            icon: Icons.format_quote_rounded,
+            iconColor: const Color(0xFF8B5CF6),
+            iconBg: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
             value: "$totalNotes",
             unit: "개",
-            label: "독서 노트",
+            label: "독서 기록",
             isDark: isDark,
           ),
         ),

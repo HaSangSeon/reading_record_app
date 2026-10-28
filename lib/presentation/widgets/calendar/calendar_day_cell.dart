@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/book_model.dart';
@@ -90,26 +91,41 @@ class CalendarDayCell extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (isToday)
-                  Container(
-                    margin: const EdgeInsets.only(right: 2),
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: primary,
-                      shape: BoxShape.circle,
-                    ),
-                  )
-                else if (hasNotes && !hasCompleted)
-                  Container(
-                    margin: const EdgeInsets.only(right: 2),
-                    width: 4,
-                    height: 4,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF8B5CF6),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasNotes && hasCompleted)
+                      Container(
+                        margin: const EdgeInsets.only(right: 2),
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF8B5CF6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    if (isToday)
+                      Container(
+                        margin: const EdgeInsets.only(right: 2),
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: primary,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    else if (hasNotes && !hasCompleted)
+                      Container(
+                        margin: const EdgeInsets.only(right: 2),
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF8B5CF6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
 
@@ -118,7 +134,12 @@ class CalendarDayCell extends StatelessWidget {
             // 중앙/하단: 완독 도서 표지 또는 독서노트 배지
             Expanded(
               child: hasCompleted
-                  ? _buildBookCoverThumbnail(completedBooks.first, completedBooks.length, isDark)
+                  ? _buildBookCoverThumbnail(
+                      completedBooks.first,
+                      completedBooks.length,
+                      notes.length,
+                      isDark,
+                    )
                   : (hasNotes
                       ? _buildNoteIndicator(notes.length, isDark)
                       : const SizedBox.shrink()),
@@ -130,8 +151,14 @@ class CalendarDayCell extends StatelessWidget {
   }
 
   /// 완독 도서 표지 미니 썸네일
-  Widget _buildBookCoverThumbnail(Book book, int count, bool isDark) {
-    final hasValidCover = book.coverUrl != null && book.coverUrl!.trim().isNotEmpty;
+  Widget _buildBookCoverThumbnail(
+    Book book,
+    int count,
+    int noteCount,
+    bool isDark,
+  ) {
+    final hasValidCover =
+        book.coverUrl != null && book.coverUrl!.trim().isNotEmpty;
 
     return Stack(
       fit: StackFit.expand,
@@ -151,14 +178,52 @@ class CalendarDayCell extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: hasValidCover
-                ? Image.network(
-                    book.coverUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _buildCoverFallback(book, isDark),
-                  )
+                ? _buildImage(book.coverUrl!, book, isDark)
                 : _buildCoverFallback(book, isDark),
           ),
         ),
+
+        // 독서 노트도 작성한 날이면 좌측 하단에 미니 따옴표 배지 표시
+        if (noteCount > 0)
+          Positioned(
+            left: 1,
+            bottom: 1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6),
+                borderRadius: BorderRadius.circular(3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.format_quote_rounded,
+                    size: 7,
+                    color: Colors.white,
+                  ),
+                  if (noteCount > 1) ...[
+                    const SizedBox(width: 1),
+                    Text(
+                      '$noteCount',
+                      style: const TextStyle(
+                        fontSize: 6.5,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
 
         // 2권 이상 완독 시 +N 배지 표시
         if (count > 1)
@@ -188,6 +253,22 @@ class CalendarDayCell extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  /// 웹 이미지 및 로컬 기기 파일 이미지 안전 렌더링
+  Widget _buildImage(String url, Book book, bool isDark) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _buildCoverFallback(book, isDark),
+      );
+    }
+    return Image.file(
+      File(url),
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _buildCoverFallback(book, isDark),
     );
   }
 

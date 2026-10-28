@@ -1,12 +1,15 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../core/ads/admob_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/book_model.dart';
 import '../../providers/repository_providers.dart';
 import '../controllers/book_controller.dart';
+import 'book_completed_date_picker_dialog.dart';
 import 'book_search_dialog.dart';
 
 class BookFormDialog extends ConsumerStatefulWidget {
@@ -94,6 +97,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
   late TextEditingController _memoController;
 
   late bool _isCompleted;
+  late DateTime _completedAt;
   late double _rating;
   final ImagePicker _picker = ImagePicker();
 
@@ -116,6 +120,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     _memoController = TextEditingController(text: b?.memo ?? '');
 
     _isCompleted = b?.isCompleted ?? false;
+    _completedAt = b?.completedAt ?? DateTime.now();
     _rating = b?.rating ?? 0.0;
   }
 
@@ -249,6 +254,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
       }
     }
 
+    final totalPages = widget.initialBook?.totalPages ?? 0;
     bool success;
 
     if (isEdit) {
@@ -257,7 +263,11 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         author: author,
         publisher: publisher,
         coverUrl: coverUrl,
+        clearCoverUrl: coverUrl == null,
+        totalPages: totalPages,
         isCompleted: _isCompleted,
+        completedAt: _isCompleted ? _completedAt : null,
+        clearCompletedAt: !_isCompleted,
         rating: _rating,
         memo: memo,
       );
@@ -272,7 +282,9 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
             author: author,
             publisher: publisher,
             coverUrl: coverUrl,
+            totalPages: totalPages,
             isCompleted: _isCompleted,
+            completedAt: _isCompleted ? _completedAt : null,
             rating: _rating,
             memo: memo,
           );
@@ -647,19 +659,193 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                           }),
                         ),
                         const Spacer(),
-                        // 완독 여부 토글
-                        FilterChip(
-                          label: const Text('완독 여부'),
-                          selected: _isCompleted,
-                          onSelected: (val) =>
-                              setState(() => _isCompleted = val),
-                          selectedColor: AppTheme.successColor.withValues(
-                            alpha: 0.2,
+                        // 완독 여부 세련된 토글 버튼
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() => _isCompleted = !_isCompleted);
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 11,
+                              vertical: 6.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _isCompleted
+                                  ? AppTheme.successColor.withValues(
+                                      alpha: isDark ? 0.22 : 0.12,
+                                    )
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : const Color(0xFFF1F5F9)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _isCompleted
+                                    ? AppTheme.successColor.withValues(alpha: 0.45)
+                                    : (isDark
+                                        ? const Color(0xFF2C394E)
+                                        : const Color(0xFFE2E8F0)),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isCompleted
+                                      ? Icons.check_circle_rounded
+                                      : Icons.radio_button_unchecked_rounded,
+                                  size: 15,
+                                  color: _isCompleted
+                                      ? AppTheme.successColor
+                                      : (isDark
+                                          ? AppTheme.darkTextSecondary
+                                          : AppTheme.textSecondary),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '완독',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: _isCompleted
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: _isCompleted
+                                        ? AppTheme.successColor
+                                        : (isDark
+                                            ? AppTheme.darkTextSecondary
+                                            : AppTheme.textSecondary),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          checkmarkColor: AppTheme.successColor,
                         ),
                       ],
                     ),
+                    if (_isCompleted) ...[
+                      const SizedBox(height: 10),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await BookCompletedDatePickerDialog.show(
+                            context,
+                            initialDate: _completedAt,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
+                            title: '완독 날짜 선택',
+                            confirmText: '선택 완료',
+                          );
+                          if (picked != null) {
+                            setState(() => _completedAt = picked);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.successColor.withValues(
+                              alpha: isDark ? 0.14 : 0.07,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.successColor.withValues(
+                                alpha: isDark ? 0.4 : 0.25,
+                              ),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.successColor.withValues(
+                                    alpha: isDark ? 0.25 : 0.15,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.event_available_rounded,
+                                  size: 15,
+                                  color: AppTheme.successColor,
+                                ),
+                              ),
+                              const SizedBox(width: 9),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '완독 날짜',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? AppTheme.darkTextSecondary
+                                          : AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    DateFormat('yyyy년 M월 d일').format(_completedAt),
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.successColor,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: (isDark
+                                          ? AppTheme.primaryLight
+                                          : AppTheme.primaryColor)
+                                      .withValues(alpha: isDark ? 0.2 : 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '날짜 변경',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? AppTheme.primaryLight
+                                            : AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.calendar_month_rounded,
+                                      size: 13,
+                                      color: isDark
+                                          ? AppTheme.primaryLight
+                                          : AppTheme.primaryColor,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     // 한 줄 메모
                     TextFormField(

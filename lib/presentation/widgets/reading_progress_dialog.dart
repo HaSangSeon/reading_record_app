@@ -565,15 +565,16 @@ class _ReadingProgressDialogState extends ConsumerState<ReadingProgressDialog> {
                     const SizedBox(width: 6),
                     ElevatedButton(
                       onPressed: () async {
+                        final isNowCompleted =
+                            _totalPages > 0 && _readPages >= _totalPages;
                         final updatedBook = widget.book.copyWith(
                           readPages: _readPages,
                           totalPages: _totalPages,
-                          isCompleted:
-                              _totalPages > 0 && _readPages >= _totalPages,
-                          completedAt:
-                              (_totalPages > 0 && _readPages >= _totalPages)
+                          isCompleted: isNowCompleted,
+                          completedAt: isNowCompleted
                               ? (widget.book.completedAt ?? DateTime.now())
                               : null,
+                          clearCompletedAt: !isNowCompleted,
                         );
                         await ref
                             .read(bookControllerProvider.notifier)

@@ -10,6 +10,7 @@ import "../controllers/note_controller.dart";
 import "../controllers/theme_controller.dart";
 import "../widgets/action_bottom_sheet.dart";
 import "../widgets/custom_confirm_dialog.dart";
+import "../widgets/home/add_book_options_sheet.dart";
 import "../widgets/note_form_dialog.dart";
 import "../widgets/shareable_quote_card_dialog.dart";
 import "book_detail_screen.dart";
@@ -378,6 +379,71 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [
+                    Color(0xFF818CF8),
+                    Color(0xFF6366F1),
+                    Color(0xFF4F46E5),
+                  ]
+                : const [
+                    Color(0xFF6366F1),
+                    Color(0xFF4F46E5),
+                    Color(0xFF4338CA),
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.25),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4F46E5).withValues(
+                alpha: isDark ? 0.5 : 0.38,
+              ),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _onTapAddQuote(context),
+            borderRadius: BorderRadius.circular(18),
+            splashColor: Colors.white.withValues(alpha: 0.2),
+            highlightColor: Colors.transparent,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.edit_note_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    '문장 기록',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -964,6 +1030,255 @@ class _QuoteFeedScreenState extends ConsumerState<QuoteFeedScreen> {
                 color: isDark
                     ? AppTheme.darkTextSecondary
                     : AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _onTapAddQuote(context),
+              icon: const Icon(Icons.edit_note_rounded, size: 20),
+              label: const Text(
+                '첫 번째 문장 기록하기',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onTapAddQuote(BuildContext context) {
+    final allBooksAsync = ref.read(allBooksStreamProvider);
+    final books = allBooksAsync.value ?? [];
+
+    if (books.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: AppTheme.primaryColor),
+              SizedBox(width: 8),
+              Text(
+                '도서 등록 필요',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            '독서 노트를 작성하려면 먼저 서재에 도서를 등록해야 합니다.\n\n지금 책을 등록하시겠습니까?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('닫기'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                AddBookOptionsSheet.show(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('책 등록하기'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final selectedBookId = ref.read(quoteFeedSelectedBookIdProvider);
+    if (selectedBookId != null) {
+      final targetBook = books.firstWhere(
+        (b) => b.id == selectedBookId,
+        orElse: () => books.first,
+      );
+      NoteFormDialog.show(context, book: targetBook);
+      return;
+    }
+
+    if (books.length == 1) {
+      NoteFormDialog.show(context, book: books.first);
+      return;
+    }
+
+    _showBookPickerForQuote(context, books);
+  }
+
+  void _showBookPickerForQuote(BuildContext context, List<Book> books) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurfaceCard : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 드래그 핸들
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      size: 18,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '어떤 책의 문장을 기록할까요?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              color: isDark ? AppTheme.darkBorder : const Color(0xFFEDF0F5),
+            ),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                itemCount: books.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final b = books[index];
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        NoteFormDialog.show(context, book: b);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E2433)
+                              : const Color(0xFFF8FAFD),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF2B3347)
+                                : const Color(0xFFE8EEF5),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                                color: isDark
+                                    ? const Color(0xFF2C3249)
+                                    : const Color(0xFFE2E4EE),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: _buildMiniCover(b.coverUrl),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    b.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? AppTheme.darkTextPrimary
+                                          : AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    b.author,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? AppTheme.darkTextSecondary
+                                          : AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.edit_note_rounded,
+                              size: 22,
+                              color: isDark
+                                  ? AppTheme.primaryLight
+                                  : AppTheme.primaryColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -62,12 +62,15 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     int totalPages = 0,
     int readPages = 0,
     bool isCompleted = false,
+    DateTime? completedAt,
     double rating = 0.0,
     String memo = '',
   }) async {
     state = const AsyncValue.loading();
     try {
       final now = DateTime.now();
+      final effectiveCompleted =
+          isCompleted || (totalPages > 0 && readPages >= totalPages);
       final newBook = Book(
         id: _uuid.v4(),
         title: title.trim(),
@@ -76,9 +79,9 @@ class BookController extends StateNotifier<AsyncValue<void>> {
         coverUrl: coverUrl?.trim().isEmpty == true ? null : coverUrl?.trim(),
         totalPages: totalPages,
         readPages: readPages,
-        isCompleted: isCompleted || (totalPages > 0 && readPages >= totalPages),
+        isCompleted: effectiveCompleted,
         createdAt: now,
-        completedAt: isCompleted ? now : null,
+        completedAt: effectiveCompleted ? (completedAt ?? now) : null,
         rating: rating,
         memo: memo.trim(),
       );
@@ -132,6 +135,7 @@ class BookController extends StateNotifier<AsyncValue<void>> {
       readPages: currentReadPages,
       isCompleted: isNowCompleted,
       completedAt: isNowCompleted ? (book.completedAt ?? DateTime.now()) : null,
+      clearCompletedAt: !isNowCompleted,
     );
 
     await _bookRepository.updateBook(updated);
@@ -147,7 +151,22 @@ class BookController extends StateNotifier<AsyncValue<void>> {
     final updated = book.copyWith(
       isCompleted: willBeCompleted,
       readPages: willBeCompleted ? book.totalPages : book.readPages,
-      completedAt: willBeCompleted ? DateTime.now() : null,
+      completedAt: willBeCompleted ? (book.completedAt ?? DateTime.now()) : null,
+      clearCompletedAt: !willBeCompleted,
+    );
+
+    await _bookRepository.updateBook(updated);
+    _refreshReminderAsync();
+  }
+
+  /// 완독일 날짜 직접 업데이트
+  Future<void> updateCompletedAt(String bookId, DateTime? completedAt) async {
+    final book = await _bookRepository.getBookById(bookId);
+    if (book == null) return;
+
+    final updated = book.copyWith(
+      completedAt: completedAt,
+      clearCompletedAt: completedAt == null,
     );
 
     await _bookRepository.updateBook(updated);

@@ -562,6 +562,7 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
         pageNumber: pageNumber,
         quotation: quotation,
         content: content,
+        updatedAt: DateTime.now(),
       );
       success = await ref
           .read(noteControllerProvider.notifier)

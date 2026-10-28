@@ -21,10 +21,6 @@ class BookCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryLight : AppTheme.primaryColor;
 
-    final hasPages = book.totalPages > 0;
-    final progressFraction = book.progress.clamp(0.0, 1.0);
-    final progressPercent = (progressFraction * 100).toInt();
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -148,53 +144,7 @@ class BookCard extends ConsumerWidget {
 
                       const SizedBox(height: 10),
 
-                      // 3. 독서 진행률 미니 프로그레스 바 (p.120 / 300p · 40%)
-                      if (hasPages) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "p.${book.readPages} / ${book.totalPages}p",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? AppTheme.darkTextSecondary
-                                    : AppTheme.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              "$progressPercent%",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: book.isCompleted
-                                    ? const Color(0xFF10B981)
-                                    : primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: progressFraction,
-                            minHeight: 4.5,
-                            backgroundColor: isDark
-                                ? const Color(0xFF262C40)
-                                : const Color(0xFFF1EEF8),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              book.isCompleted
-                                  ? const Color(0xFF10B981)
-                                  : primary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-
-                      // 4. 카드 푸터 (별점/등록일 & 원터치 완독 토글 뱃지)
+                      // 카드 푸터 (별점/등록일 & 원터치 완독 토글 뱃지)
                       _buildCardFooter(context, ref, isDark, primary),
                     ],
                   ),

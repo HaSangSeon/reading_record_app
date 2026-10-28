@@ -351,7 +351,6 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
     final readingBooks = totalBooks - completedBooks;
     final completionRate =
         totalBooks > 0 ? ((completedBooks / totalBooks) * 100).toInt() : 0;
-    final totalPages = books.fold<int>(0, (sum, b) => sum + b.readPages);
     final totalNotes = notes.length;
 
     final ratedBooks = books.where((b) => b.rating > 0).toList();
@@ -394,9 +393,9 @@ class _StatsDashboardScreenState extends ConsumerState<StatsDashboardScreen>
 
               const SizedBox(height: 16),
 
-              // 2. 빠른 지표 3 카드 (페이지, 노트, 별점)
+              // 2. 빠른 지표 3 카드 (완독 도서, 독서 기록, 별점)
               StatsQuickMetricsRow(
-                totalPages: totalPages,
+                completedBooks: completedBooks,
                 totalNotes: totalNotes,
                 avgRating: avgRating,
               ),
