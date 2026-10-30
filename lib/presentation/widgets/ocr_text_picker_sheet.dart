@@ -14,6 +14,7 @@ class OcrTextPickerSheet extends StatefulWidget {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => OcrTextPickerSheet(imageFile: imageFile),
     );
@@ -78,23 +79,32 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
     final systemBottomInset = math.max(
       mediaQuery.viewPadding.bottom,
       mediaQuery.padding.bottom,
     );
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: mediaQuery.size.height * 0.85,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161C24) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 1. 프리미엄 상단 헤더
+    // 키보드 유무에 따른 최대 가용 높이 계산
+    final availableHeight = mediaQuery.size.height - keyboardHeight;
+    final maxSheetHeight = keyboardHeight > 0
+        ? math.max(260.0, availableHeight - mediaQuery.viewPadding.top - 16.0)
+        : mediaQuery.size.height * 0.85;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: maxSheetHeight,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161C24) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 1. 프리미엄 상단 헤더
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 14, 16),
             decoration: BoxDecoration(
@@ -264,12 +274,17 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
                 ? _buildLoadingState(isDark, systemBottomInset)
                 : _errorMessage != null
                     ? _buildErrorState(isDark, systemBottomInset)
-                    : _buildEditorState(isDark, mediaQuery, systemBottomInset),
+                    : _buildEditorState(
+                        isDark,
+                        systemBottomInset,
+                        keyboardHeight > 0,
+                      ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildLoadingState(bool isDark, double systemBottomInset) {
     return Container(
@@ -366,91 +381,121 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
 
   Widget _buildEditorState(
     bool isDark,
-    MediaQueryData mediaQuery,
     double systemBottomInset,
+    bool isKeyboardOpen,
   ) {
-    final bottomInset = mediaQuery.viewInsets.bottom > 0
-        ? mediaQuery.viewInsets.bottom + 24.0
-        : systemBottomInset + 32.0;
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: bottomInset,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1E2633)
-                  : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF2B384D)
-                    : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 1. 스크롤 가능한 본문 영역 (안내문구 + 텍스트필드)
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 16,
-                  color: isDark ? AppTheme.primaryLight : AppTheme.primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '스캔된 글자를 터치하여 오탈자를 수정할 수 있습니다.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF1E2633)
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
                       color: isDark
-                          ? AppTheme.darkTextSecondary
-                          : AppTheme.textSecondary,
+                          ? const Color(0xFF2B384D)
+                          : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 16,
+                        color: isDark
+                            ? AppTheme.primaryLight
+                            : AppTheme.primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '스캔된 글자를 터치하여 오탈자를 수정할 수 있습니다.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? AppTheme.darkTextSecondary
+                                : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _textController,
+                  maxLines: null,
+                  minLines: 5,
+                  keyboardType: TextInputType.multiline,
+                  scrollPadding: const EdgeInsets.all(28),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    height: 1.55,
+                    color:
+                        isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '인식된 문장이 여기에 표시됩니다.',
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF1E2633)
+                        : const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.all(16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF2B384D)
+                            : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6366F1),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _textController,
-            maxLines: 8,
-            style: TextStyle(
-              fontSize: 14.5,
-              height: 1.55,
-              color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: '인식된 문장이 여기에 표시됩니다.',
-              filled: true,
-              fillColor: isDark ? const Color(0xFF1E2633) : const Color(0xFFF8FAFC),
-              contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: isDark ? const Color(0xFF2B384D) : const Color(0xFFCBD5E1),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: Color(0xFF6366F1),
-                  width: 1.5,
-                ),
+        ),
+
+        // 2. 하단 액션 버튼 바 (키보드 위 또는 화면 하단에 항상 고정 노출)
+        Container(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            isKeyboardOpen ? 12 : math.max(systemBottomInset, 16),
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF161C24) : Colors.white,
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? const Color(0xFF263040)
+                    : const Color(0xFFE2E8F0),
+                width: 0.8,
               ),
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
+          child: Row(
             children: [
               Expanded(
                 child: OutlinedButton(
@@ -492,8 +537,8 @@ class _OcrTextPickerSheetState extends State<OcrTextPickerSheet> {
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
