@@ -76,6 +76,7 @@ class BookFormDialog extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => BookFormDialog(
         initialBook: book,
@@ -357,8 +358,28 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.initialBook != null;
     final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final systemBottomInset = math.max(
+      mediaQuery.viewPadding.bottom,
+      mediaQuery.padding.bottom,
+    );
 
-    return Container(
+    final maxSheetHeight = widget.isDialog
+        ? null
+        : (keyboardHeight > 0
+            ? math.max(
+                280.0,
+                mediaQuery.size.height -
+                    keyboardHeight -
+                    mediaQuery.viewPadding.top -
+                    16.0,
+              )
+            : mediaQuery.size.height * 0.90);
+
+    final sheetContent = Container(
+      constraints: maxSheetHeight != null
+          ? BoxConstraints(maxHeight: maxSheetHeight)
+          : null,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161C24) : Colors.white,
         borderRadius: widget.isDialog
@@ -561,9 +582,11 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
           Flexible(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
-                bottom: mediaQuery.viewInsets.bottom > 0
-                    ? mediaQuery.viewInsets.bottom + 24.0
-                    : math.max(mediaQuery.viewPadding.bottom, mediaQuery.padding.bottom) + 32.0,
+                bottom: widget.isDialog
+                    ? 24.0
+                    : (keyboardHeight > 0
+                        ? 20.0
+                        : systemBottomInset + 28.0),
                 left: 20,
                 right: 20,
                 top: 18,
@@ -578,6 +601,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     TextFormField(
                       controller: _titleController,
                       maxLength: 100,
+                      scrollPadding: const EdgeInsets.all(36),
                       decoration: InputDecoration(
                         labelText: '책 제목 *',
                         hintText: '예: 불편한 편의점',
@@ -600,6 +624,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                           child: TextFormField(
                             controller: _authorController,
                             maxLength: 50,
+                            scrollPadding: const EdgeInsets.all(36),
                             decoration: InputDecoration(
                               labelText: '저자 *',
                               hintText: '김호연',
@@ -621,6 +646,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                           child: TextFormField(
                             controller: _publisherController,
                             maxLength: 50,
+                            scrollPadding: const EdgeInsets.all(36),
                             decoration: InputDecoration(
                               labelText: '출판사',
                               hintText: '나무옆의자',
@@ -640,6 +666,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     TextFormField(
                       controller: _coverUrlController,
                       maxLength: 1000,
+                      scrollPadding: const EdgeInsets.all(36),
                       onChanged: (val) {
                         if (val != '📷 직접 등록한 사진 표지') {
                           setState(() => _customCoverData = null);
@@ -960,7 +987,10 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     TextFormField(
                       controller: _memoController,
                       maxLength: 500,
-                      maxLines: 2,
+                      minLines: 2,
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      scrollPadding: const EdgeInsets.all(40),
                       decoration: InputDecoration(
                         labelText: '한 줄 평 / 메모',
                         hintText: '이 책을 읽고 난 느낌이나 기억하고 싶은 점',
@@ -1018,5 +1048,14 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
         ],
       ),
     );
+
+    if (!widget.isDialog) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        child: sheetContent,
+      );
+    }
+
+    return sheetContent;
   }
 }

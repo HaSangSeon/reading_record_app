@@ -47,6 +47,7 @@ class NoteFormDialog extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => NoteFormDialog(book: book, initialNote: note),
     );
@@ -593,8 +594,28 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.initialNote != null;
     final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final systemBottomInset = math.max(
+      mediaQuery.viewPadding.bottom,
+      mediaQuery.padding.bottom,
+    );
 
-    return Container(
+    final maxSheetHeight = widget.isDialog
+        ? null
+        : (keyboardHeight > 0
+            ? math.max(
+                280.0,
+                mediaQuery.size.height -
+                    keyboardHeight -
+                    mediaQuery.viewPadding.top -
+                    16.0,
+              )
+            : mediaQuery.size.height * 0.90);
+
+    final sheetContent = Container(
+      constraints: maxSheetHeight != null
+          ? BoxConstraints(maxHeight: maxSheetHeight)
+          : null,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161C24) : Colors.white,
         borderRadius: widget.isDialog 
@@ -750,9 +771,11 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                 top: 18,
                 left: 20,
                 right: 20,
-                bottom: mediaQuery.viewInsets.bottom > 0
-                    ? mediaQuery.viewInsets.bottom + 24.0
-                    : math.max(mediaQuery.viewPadding.bottom, mediaQuery.padding.bottom) + 32.0,
+                bottom: widget.isDialog
+                    ? 24.0
+                    : (keyboardHeight > 0
+                        ? 20.0
+                        : systemBottomInset + 28.0),
               ),
               child: Form(
                 key: _formKey,
@@ -771,6 +794,7 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                           controller: _pageController,
                           maxLength: 5,
                           keyboardType: TextInputType.number,
+                          scrollPadding: const EdgeInsets.all(36),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -867,7 +891,10 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                         TextFormField(
                           controller: _quotationController,
                           maxLength: 2000,
-                          maxLines: 3,
+                          minLines: 3,
+                          maxLines: 8,
+                          keyboardType: TextInputType.multiline,
+                          scrollPadding: const EdgeInsets.all(40),
                           style: TextStyle(
                             fontSize: 14.5,
                             color: isDark
@@ -909,7 +936,10 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
                         TextFormField(
                           controller: _contentController,
                           maxLength: 2000,
-                          maxLines: 4,
+                          minLines: 3,
+                          maxLines: 7,
+                          keyboardType: TextInputType.multiline,
+                          scrollPadding: const EdgeInsets.all(40),
                           style: TextStyle(
                             fontSize: 14.5,
                             color: isDark
@@ -982,6 +1012,15 @@ class _NoteFormDialogState extends ConsumerState<NoteFormDialog> {
         ],
       ),
     );
+
+    if (!widget.isDialog) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        child: sheetContent,
+      );
+    }
+
+    return sheetContent;
   }
 
   Widget _buildFieldLabel(String label, bool isDark) {
