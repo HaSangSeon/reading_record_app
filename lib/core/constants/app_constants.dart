@@ -16,7 +16,7 @@ class AppConstants {
   static const String notificationDaysKey = 'notification_days_key';
 
   // App Version & Build
-  static const String appVersion = '1.0.15';
-  static const int appBuildNumber = 19;
-  static const String versionDisplay = 'v1.0.15 (Build 19)';
+  static const String appVersion = '1.0.16';
+  static const int appBuildNumber = 20;
+  static const String versionDisplay = 'v1.0.16 (Build 20)';
 }

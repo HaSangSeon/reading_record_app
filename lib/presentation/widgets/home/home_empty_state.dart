@@ -5,10 +5,12 @@ import '../book_search_dialog.dart';
 
 class HomeEmptyState extends StatelessWidget {
   final bool isDark;
+  final bool isFiltered;
 
   const HomeEmptyState({
     super.key,
     required this.isDark,
+    this.isFiltered = false,
   });
 
   @override
@@ -20,14 +22,14 @@ class HomeEmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.menu_book_rounded,
+              isFiltered ? Icons.search_off_rounded : Icons.menu_book_rounded,
               size: 72,
               color: (isDark ? AppTheme.darkTextLight : AppTheme.textLight)
                   .withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
-              '조건에 맞는 책이 없습니다',
+              isFiltered ? '조건에 맞는 책이 없습니다' : '등록된 책이 없습니다',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -36,7 +38,9 @@ class HomeEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '새로운 책을 등록하거나 온라인에서 검색해 보세요.',
+              isFiltered
+                  ? '다른 검색어를 입력하거나 필터를 변경해 보세요.'
+                  : '첫 책을 등록하고 독서 기록을 시작해 보세요.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,

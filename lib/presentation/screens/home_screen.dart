@@ -24,33 +24,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  Future<void> _syncData() async {
+  Future<void> _syncData({bool isManualButton = false}) async {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
     try {
       final hiveService = ref.read(hiveServiceProvider);
       final firebaseService = ref.read(firebaseServiceProvider);
-      final syncResult = await firebaseService.syncWithCloud(hiveService);
+      final isGoogleLinked = firebaseService.isLinked;
+      final localBookCount = hiveService.bookBox.values.length;
+
+      final syncResult = isGoogleLinked
+          ? await firebaseService.syncWithCloud(hiveService)
+          : null;
+
       ref.invalidate(allBooksStreamProvider);
       ref.invalidate(allNotesStreamProvider);
-      final success = syncResult.success;
-      if (mounted) {
+
+      if (!mounted) return;
+
+      if (isManualButton) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        String message;
+        IconData icon;
+        Color bgColor;
+
+        if (!isGoogleLinked) {
+          message = '설정에서 구글 계정을 연동하면 다른 기기와 실시간 동기화됩니다.';
+          icon = Icons.info_outline_rounded;
+          bgColor = const Color(0xFF6366F1);
+        } else if (syncResult != null && !syncResult.success) {
+          message = '동기화 중 오류가 발생했습니다.';
+          icon = Icons.cloud_off_rounded;
+          bgColor = Colors.redAccent;
+        } else if (localBookCount == 0) {
+          message = '클라우드 동기화 완료 (등록된 도서가 없습니다)';
+          icon = Icons.cloud_done_rounded;
+          bgColor = const Color(0xFF10B981);
+        } else {
+          message = '클라우드와 최신 데이터로 동기화되었습니다.';
+          icon = Icons.cloud_done_rounded;
+          bgColor = const Color(0xFF10B981);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(
-                  success ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                Icon(icon, color: Colors.white, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    success
-                        ? '클라우드와 최신 데이터로 동기화되었습니다.'
-                        : '동기화 중 오류가 발생했습니다.',
+                    message,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -59,8 +83,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
-            backgroundColor:
-                success ? const Color(0xFF10B981) : Colors.redAccent,
+            backgroundColor: bgColor,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
             shape: RoundedRectangleBorder(
@@ -200,7 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         : AppTheme.textSecondary,
                   ),
             tooltip: '클라우드 동기화',
-            onPressed: _isSyncing ? null : _syncData,
+            onPressed: _isSyncing ? null : () => _syncData(isManualButton: true),
           ),
           // 독서 캘린더 바로가기 버튼
           IconButton(
@@ -356,7 +379,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     if (books.isEmpty)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: HomeEmptyState(isDark: isDark),
+                        child: HomeEmptyState(
+                          isDark: isDark,
+                          isFiltered:
+                              (allBooksAsync.value?.isNotEmpty ?? false),
+                        ),
                       )
                     else
                       SliverPadding(
