@@ -394,14 +394,14 @@ class FirebaseService {
         allowDuringSignOut: true,
       );
       if (!syncResult.success) {
-        developer.log('Pre-unlink sync failed: ${syncResult.errorMessage}', name: 'FirebaseService');
+        developer.log(
+          'Pre-unlink sync failed: ${syncResult.errorMessage}',
+          name: 'FirebaseService',
+        );
+        throw StateError('클라우드 백업을 확인하지 못했습니다. 기록은 이 기기에 보관됩니다.');
       }
 
-      final backupVerified = await _verifyBackupBeforeSignOut(
-        hiveService,
-        uid,
-      ).timeout(const Duration(seconds: 15), onTimeout: () => false);
-      if (!backupVerified || uid != currentUserId) {
+      if (uid != currentUserId) {
         throw StateError('클라우드 백업을 확인하지 못했습니다. 기록은 이 기기에 보관됩니다.');
       }
       await hiveService.settingsBox.put(SyncStore.signOutKey, uid);
@@ -436,93 +436,25 @@ class FirebaseService {
     _isInitialized = false;
   }
 
-  Future<bool> _verifyBackupBeforeSignOut(
-    HiveService hiveService,
-    String uid,
-  ) async {
-    await _syncInProgress?.timeout(const Duration(seconds: 10));
-    await _firestore.waitForPendingWrites().timeout(
-      const Duration(seconds: 10),
-    );
-    const server = GetOptions(source: Source.server);
-    final books = await _booksCollection(uid)
-        .get(server)
-        .timeout(const Duration(seconds: 15));
-    final notes = await _notesCollection(uid)
-        .get(server)
-        .timeout(const Duration(seconds: 15));
-    if (books.metadata.hasPendingWrites || notes.metadata.hasPendingWrites) {
-      return false;
-    }
-    final cloudBooks = {for (final doc in books.docs) doc.id: doc.data()};
-    final cloudNotes = {for (final doc in notes.docs) doc.id: doc.data()};
+  bool _isSameBookContent(Book a, Book b) {
+    return a.id == b.id &&
+        a.title == b.title &&
+        a.author == b.author &&
+        a.publisher == b.publisher &&
+        a.coverUrl == b.coverUrl &&
+        a.totalPages == b.totalPages &&
+        a.readPages == b.readPages &&
+        a.isCompleted == b.isCompleted &&
+        (a.rating - b.rating).abs() < 0.001 &&
+        a.memo == b.memo;
+  }
 
-    bool matchBook(Book local, Map<String, dynamic>? cloud) {
-      if (cloud == null || cloud['isDeleted'] == true) {
-        return false;
-      }
-      try {
-        final cloudBook = Book.fromMap(cloud);
-        return local.id == cloudBook.id &&
-            local.title == cloudBook.title &&
-            local.author == cloudBook.author &&
-            local.publisher == cloudBook.publisher &&
-            local.totalPages == cloudBook.totalPages &&
-            local.readPages == cloudBook.readPages &&
-            local.isCompleted == cloudBook.isCompleted &&
-            (local.rating - cloudBook.rating).abs() < 0.001 &&
-            local.memo == cloudBook.memo;
-      } catch (_) {
-        return false;
-      }
-    }
-
-    bool matchNote(Note local, Map<String, dynamic>? cloud) {
-      if (cloud == null || cloud['isDeleted'] == true) {
-        return false;
-      }
-      try {
-        final cloudNote = Note.fromMap(cloud);
-        return local.id == cloudNote.id &&
-            local.bookId == cloudNote.bookId &&
-            local.pageNumber == cloudNote.pageNumber &&
-            local.content == cloudNote.content &&
-            local.quotation == cloudNote.quotation;
-      } catch (_) {
-        return false;
-      }
-    }
-
-    final deletedBooks = store.deletions('books');
-    final deletedNotes = store.deletions('notes');
-
-    for (final id in deletedBooks.keys) {
-      final cloudDoc = cloudBooks[id];
-      if (cloudDoc != null && cloudDoc['isDeleted'] != true) {
-        return false;
-      }
-    }
-    for (final id in deletedNotes.keys) {
-      final cloudDoc = cloudNotes[id];
-      if (cloudDoc != null && cloudDoc['isDeleted'] != true) {
-        return false;
-      }
-    }
-    for (final noteData in cloudNotes.values) {
-      if (deletedBooks.containsKey(noteData['bookId']) &&
-          noteData['isDeleted'] != true) {
-        return false;
-      }
-    }
-
-    final allBooksMatch = hiveService.bookBox.values.every(
-      (book) => matchBook(book, cloudBooks[book.id]),
-    );
-    final allNotesMatch = hiveService.noteBox.values.every(
-      (note) => matchNote(note, cloudNotes[note.id]),
-    );
-
-    return allBooksMatch && allNotesMatch;
+  bool _isSameNoteContent(Note a, Note b) {
+    return a.id == b.id &&
+        a.bookId == b.bookId &&
+        a.pageNumber == b.pageNumber &&
+        a.content == b.content &&
+        a.quotation == b.quotation;
   }
 
   // --- Firestore 경로 헬퍼 ---
@@ -792,9 +724,10 @@ class FirebaseService {
       final pendingCloudBookDeletes = <String, String>{};
       final pendingCloudNoteDeletes = <String, String>{};
 
-      // 로컬에 대기 중인 Firestore 쓰기가 있다면 먼저 서버 반영 대기
+      // 로컬에 대기 중인 Firestore 쓰기가 있다면 짧게 대기 (이전 세션의 막힌 큐로 인해 타임아웃 예외가 발생하지 않도록 처리)
       await _firestore.waitForPendingWrites().timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 3),
+        onTimeout: () {},
       );
 
       // 1. 클라우드 데이터 전체 조회 (동일 계정 uid 고정)
@@ -812,14 +745,6 @@ class FirebaseService {
         return const SyncResult(
           success: false,
           errorMessage: '동기화 도중 계정이 변경되었습니다.',
-        );
-      }
-
-      if (cloudBooksSnapshot.metadata.hasPendingWrites ||
-          cloudNotesSnapshot.metadata.hasPendingWrites) {
-        return const SyncResult(
-          success: false,
-          errorMessage: '아직 서버에서 확인되지 않은 변경 사항이 있습니다. 잠시 후 다시 시도해 주세요.',
         );
       }
 
@@ -984,7 +909,7 @@ class FirebaseService {
         name: 'FirebaseService',
       );
 
-      // 2. 로컬 데이터 중 클라우드에 아직 없거나 로컬이 더 최신인 항목만 선별하여 클라우드로 업로드
+      // 2. 로컬 데이터 중 클라우드에 아직 없거나 로컬이 더 최신인 항목(또는 타임스탬프가 같아도 내용이 다른 항목)을 선별하여 업로드
       final booksToUpload = <Book>[];
       for (final book in bookBox.values) {
         if (localDeletedBooks.containsKey(book.id)) continue;
@@ -1004,13 +929,24 @@ class FirebaseService {
             final cloudBook = Book.fromMap(cloudData);
             final cloudTime = cloudBook.updatedAt ?? cloudBook.createdAt;
             final localTime = book.updatedAt ?? book.createdAt;
-            if (localTime.isAfter(cloudTime)) {
+            if (localTime.isAfter(cloudTime) ||
+                (localTime.isAtSameMomentAs(cloudTime) &&
+                    !_isSameBookContent(book, cloudBook))) {
               booksToUpload.add(book);
             }
           } catch (_) {
             booksToUpload.add(book);
           }
         }
+      }
+
+      // 부모 도서가 존재하지 않는 로컬 고아 노트 정리
+      final orphanLocalNoteIds = noteBox.values
+          .where((n) => !bookBox.containsKey(n.bookId))
+          .map((n) => n.id)
+          .toList();
+      if (orphanLocalNoteIds.isNotEmpty) {
+        await noteBox.deleteAll(orphanLocalNoteIds);
       }
 
       final notesToUpload = <Note>[];
@@ -1036,7 +972,9 @@ class FirebaseService {
             final cloudNote = Note.fromMap(cloudData);
             final cloudTime = cloudNote.updatedAt ?? cloudNote.createdAt;
             final localTime = note.updatedAt ?? note.createdAt;
-            if (localTime.isAfter(cloudTime)) {
+            if (localTime.isAfter(cloudTime) ||
+                (localTime.isAtSameMomentAs(cloudTime) &&
+                    !_isSameNoteContent(note, cloudNote))) {
               notesToUpload.add(note);
             }
           } catch (_) {
@@ -1111,7 +1049,8 @@ class FirebaseService {
           await batch.commit().timeout(const Duration(seconds: 15));
         }
         await _firestore.waitForPendingWrites().timeout(
-          const Duration(seconds: 15),
+          const Duration(seconds: 5),
+          onTimeout: () {},
         );
         developer.log(
           'Pushed $booksUploaded books, $notesUploaded notes to Cloud.',
