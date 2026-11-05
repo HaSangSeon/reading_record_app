@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reading_record_app/data/models/book_model.dart';
 import 'package:reading_record_app/data/models/book_search_result.dart';
 import 'package:reading_record_app/data/models/note_model.dart';
 
 void main() {
-  group('Model & Backup Unit Tests', () {
+  group('Model Unit Tests', () {
     test('Book model creation and progress calculation', () {
       final book = Book(
         id: 'book-1',
@@ -67,41 +66,6 @@ void main() {
       expect(book.totalPages, 636);
       expect(book.memo, '인류의 역사와 미래');
       expect(book.isCompleted, false);
-    });
-
-    test('JSON Backup schema serialization test', () {
-      final book = Book(
-        id: 'b-1',
-        title: '데미안',
-        author: '헤르만 헤세',
-        totalPages: 240,
-        createdAt: DateTime(2026, 1, 1),
-      );
-      final note = Note(
-        id: 'n-1',
-        bookId: 'b-1',
-        pageNumber: 15,
-        content: '새는 알을 깨고 나온다.',
-        createdAt: DateTime(2026, 1, 1),
-      );
-
-      final backup = {
-        'app': 'ReadingRecordApp',
-        'version': 1,
-        'exportedAt': DateTime.now().toIso8601String(),
-        'booksCount': 1,
-        'notesCount': 1,
-        'books': [book.toMap()],
-        'notes': [note.toMap()],
-      };
-
-      final jsonStr = jsonEncode(backup);
-      final decoded = jsonDecode(jsonStr) as Map<String, dynamic>;
-
-      expect(decoded['app'], 'ReadingRecordApp');
-      expect(decoded['booksCount'], 1);
-      expect((decoded['books'] as List).length, 1);
-      expect((decoded['notes'] as List).length, 1);
     });
   });
 }

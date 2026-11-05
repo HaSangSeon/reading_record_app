@@ -35,6 +35,7 @@ class _LiveOcrScanScreenState extends State<LiveOcrScanScreen>
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   bool _isCameraInitialized = false;
+  bool _isCameraInitializing = false;
   bool _isProcessing = false;
   bool _isFlashOn = false;
   String? _errorMessage;
@@ -69,8 +70,8 @@ class _LiveOcrScanScreenState extends State<LiveOcrScanScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _controller;
-    if (cameraController == null || !cameraController.value.isInitialized) {
+    if (state == AppLifecycleState.resumed && _controller == null) {
+      _initCamera();
       return;
     }
 
@@ -82,12 +83,13 @@ class _LiveOcrScanScreenState extends State<LiveOcrScanScreen>
           _isCameraInitialized = false;
         });
       }
-    } else if (state == AppLifecycleState.resumed) {
-      _initCamera();
     }
   }
 
   Future<void> _initCamera() async {
+    if (_isCameraInitializing) return;
+    _isCameraInitializing = true;
+    CameraController? pendingController;
     try {
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
@@ -115,9 +117,13 @@ class _LiveOcrScanScreenState extends State<LiveOcrScanScreen>
                 : ImageFormatGroup.bgra8888,
       );
 
+      pendingController = controller;
       await controller.initialize();
-      if (!mounted) return;
+      if (!mounted || WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused) {
+        return;
+      }
 
+      pendingController = null;
       setState(() {
         _controller = controller;
         _isCameraInitialized = true;
@@ -129,6 +135,9 @@ class _LiveOcrScanScreenState extends State<LiveOcrScanScreen>
           _errorMessage = '카메라를 초기화할 수 없습니다.\n$e';
         });
       }
+    } finally {
+      _isCameraInitializing = false;
+      await pendingController?.dispose();
     }
   }
 

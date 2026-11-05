@@ -149,7 +149,7 @@ class SettingsCloudSyncCard extends ConsumerWidget {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              isLinked ? '클라우드 동기화 켜짐' : '현재 스마트폰에만 저장 중',
+                              isLinked ? '클라우드 동기화 켜짐' : 'Google 계정 미연결',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -165,7 +165,7 @@ class SettingsCloudSyncCard extends ConsumerWidget {
                       Text(
                         isLinked
                             ? '$email\n다른 기기(태블릿 등)와 실시간 자동 동기화됩니다.'
-                            : '기기 변경이나 앱 삭제 시 데이터 복원을 위해 Google 계정을 연결해 보세요.',
+                            : '기록은 이 기기에 저장되며 연결 시 익명 계정으로도 클라우드에 동기화됩니다. 기기 변경 후 복원하려면 Google 계정을 연결하세요.',
                         style: TextStyle(
                           fontSize: 11.5,
                           height: 1.35,
@@ -351,7 +351,10 @@ class SettingsCloudSyncCard extends ConsumerWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        builder: (ctx) => const PopScope(
+          canPop: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
 
       final hiveService = ref.read(hiveServiceProvider);
@@ -426,7 +429,10 @@ class SettingsCloudSyncCard extends ConsumerWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        builder: (ctx) => const PopScope(
+          canPop: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
 
       final hiveService = ref.read(hiveServiceProvider);
@@ -492,7 +498,7 @@ class SettingsCloudSyncCard extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('연동 해제'),
         content: const Text(
-          '정말 계정 연동을 해제하시겠습니까?\n이 기기의 데이터가 초기화되고 새로운 익명 계정으로 시작합니다.\n(클라우드의 기존 데이터는 안전하게 보존됩니다)',
+          '정말 계정 연동을 해제하시겠습니까?\n클라우드 백업을 확인한 뒤 이 기기의 기록을 비웁니다. 백업을 확인할 수 없으면 연동을 유지합니다.\n(클라우드의 기존 데이터는 안전하게 보존됩니다)',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
@@ -511,7 +517,10 @@ class SettingsCloudSyncCard extends ConsumerWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        builder: (ctx) => const PopScope(
+          canPop: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
 
       final hiveService = ref.read(hiveServiceProvider);
@@ -598,7 +607,7 @@ class SettingsCloudSyncCard extends ConsumerWidget {
               const SizedBox(height: 14),
               _buildHelpItem(
                 question: '지금까지 작성해 둔 내 기록이 사라지나요?',
-                answer: '절대 사라지지 않습니다! 로그인하는 즉시 현재 스마트폰에 저장된 모든 도서와 기록이 Google 클라우드로 안전하게 자동 업로드됩니다.',
+                answer: 'Google 계정을 연결하면 기기의 기록을 클라우드와 동기화합니다. 기기 변경 전 동기화 성공 여부를 확인해 주세요.',
                 icon: Icons.security_rounded,
                 color: const Color(0xFFF59E0B),
                 isDark: isDark,

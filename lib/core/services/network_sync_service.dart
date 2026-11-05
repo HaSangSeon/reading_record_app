@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'firebase_service.dart';
 
 /// 네트워크 연결 상태 감지 및 오프라인 저장 시 사용자 알림을 전담하는 서비스
 class NetworkSyncService {
@@ -13,35 +14,101 @@ class NetworkSyncService {
 
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+  Timer? _retryTimer;
 
   bool _isOnline = true;
   bool get isOnline => _isOnline;
+  bool _pendingOnlineSync = false;
+  bool _shouldNotifyOnSync = false;
+  bool _syncing = false;
 
   // 오프라인 상태 알림의 잦은 중복 방지를 위한 디바운스
   DateTime? _lastOfflineNoticeTime;
 
   // 오프라인에서 온라인으로 전환 시 실행할 동기화 콜백
-  VoidCallback? onBackOnline;
+  Future<SyncResult> Function()? onBackOnline;
+
+  /// 초기 동기화나 Firebase 초기화 실패 시 재시도 대상으로 표시
+  void markPendingSync({bool notifyOnSuccess = false}) {
+    _pendingOnlineSync = true;
+    if (notifyOnSuccess) {
+      _shouldNotifyOnSync = true;
+    }
+    if (_isOnline) {
+      _scheduleRetry();
+    }
+  }
 
   /// 서비스 초기화 및 네트워크 상태 리스너 등록
-  Future<void> init({VoidCallback? onBackOnlineCallback}) async {
+  Future<void> init({Future<SyncResult> Function()? onBackOnlineCallback}) async {
     onBackOnline = onBackOnlineCallback;
 
     try {
       final results = await _connectivity.checkConnectivity();
       _isOnline = _checkIsOnline(results);
     } catch (_) {
-      _isOnline = true;
+      _isOnline = false;
     }
 
-    _subscription = _connectivity.onConnectivityChanged.listen((results) {
+    if (!_isOnline) {
+      _pendingOnlineSync = true;
+      _shouldNotifyOnSync = true;
+    }
+
+    _subscription = _connectivity.onConnectivityChanged.listen((results) async {
       final wasOnline = _isOnline;
       _isOnline = _checkIsOnline(results);
 
-      // 오프라인 -> 온라인으로 전환 시 동기화 콜백 실행
-      if (!wasOnline && _isOnline) {
-        showOnlineSyncedNotice();
-        onBackOnline?.call();
+      if (!_isOnline) {
+        _pendingOnlineSync = true;
+        _shouldNotifyOnSync = true;
+        _retryTimer?.cancel();
+        return;
+      }
+
+      // 오프라인 -> 온라인으로 전환되었거나 이전 동기화가 미완료된 경우 실행
+      if (!wasOnline || _pendingOnlineSync) {
+        if (!wasOnline) {
+          _pendingOnlineSync = true;
+          _shouldNotifyOnSync = true;
+        }
+        await _attemptOnlineSync();
+      }
+    });
+  }
+
+  Future<void> _attemptOnlineSync() async {
+    if (_syncing || !_isOnline || onBackOnline == null) return;
+    _syncing = true;
+    _retryTimer?.cancel();
+    try {
+      final result = await onBackOnline?.call();
+      if (_isOnline && result?.success == true) {
+        final shouldNotify = _shouldNotifyOnSync;
+        _pendingOnlineSync = false;
+        _shouldNotifyOnSync = false;
+        if (shouldNotify) {
+          showOnlineSyncedNotice();
+        }
+      } else if (_isOnline) {
+        _pendingOnlineSync = true;
+        _scheduleRetry();
+      }
+    } catch (_) {
+      if (_isOnline) {
+        _pendingOnlineSync = true;
+        _scheduleRetry();
+      }
+    } finally {
+      _syncing = false;
+    }
+  }
+
+  void _scheduleRetry() {
+    _retryTimer?.cancel();
+    _retryTimer = Timer(const Duration(seconds: 5), () {
+      if (_isOnline && _pendingOnlineSync) {
+        unawaited(_attemptOnlineSync());
       }
     });
   }
@@ -53,6 +120,8 @@ class NetworkSyncService {
 
   /// 오프라인 상태에서 데이터가 저장되었을 때 사용자에게 알림 팝업/스낵바 노출
   void notifyOfflineSaved({String itemType = '기록'}) {
+    _pendingOnlineSync = true;
+    _shouldNotifyOnSync = true;
     final now = DateTime.now();
     // 3초 이내 중복 알림 방지
     if (_lastOfflineNoticeTime != null &&
@@ -101,7 +170,7 @@ class NetworkSyncService {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '기기에 안전하게 저장되었으며, 네트워크 연결 시 클라우드에 자동 백업됩니다.',
+                    '이 기기에 저장했습니다. 인터넷이 연결되면 동기화를 다시 시도합니다.',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 11,
@@ -161,6 +230,7 @@ class NetworkSyncService {
   }
 
   void dispose() {
+    _retryTimer?.cancel();
     _subscription?.cancel();
   }
 }

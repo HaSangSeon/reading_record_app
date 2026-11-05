@@ -29,10 +29,6 @@
    - 최근 6개월 완독 권수 추이 막대 그래프 차트
    - 평점 4.0 이상 인생 도서 하이라이트
 
-5. **💾 100% 온디바이스 JSON 백업 및 복원**
-   - 모든 도서 및 독서 노트를 표준 JSON 스키마로 원터치 클립보드 복사/내보내기
-   - 백업된 JSON 데이터를 붙여넣어 병합(Merge) 또는 덮어쓰기(Overwrite) 복원
-
 ---
 
 ## 🛠 기술 스택 및 아키텍처
@@ -58,8 +54,7 @@ lib/
 │   │   ├── hive_book_repository.dart         # Hive 기반 도서 CRUD & 실시간 스트림
 │   │   └── hive_note_repository.dart         # Hive 기반 노트 CRUD & 캐스케이드 삭제
 │   └── services/
-│       ├── book_search_service.dart          # Google Books & Open Library 검색 연동
-│       └── backup_service.dart               # JSON 백업 생성 및 복원 엔진
+│       └── book_search_service.dart          # Google Books & Open Library 검색 연동
 ├── domain/
 │   └── repositories/
 │       ├── book_repository.dart              # 추상 도서 리포지토리 인터페이스
@@ -68,14 +63,13 @@ lib/
 │   ├── controllers/
 │   │   ├── book_controller.dart              # 도서 상태 관리 StateNotifier
 │   │   ├── note_controller.dart              # 노트 상태 관리 StateNotifier
-│   │   ├── book_search_controller.dart       # 온라인 검색 StateNotifier
-│   │   └── backup_controller.dart            # 백업/복원 StateNotifier
+│   │   └── book_search_controller.dart       # 온라인 검색 StateNotifier
 │   ├── screens/
 │   │   ├── main_navigation_screen.dart       # 3-Tab 메인 뷰
 │   │   ├── home_screen.dart                  # 내 서재 & 필터 목록 화면
 │   │   ├── book_detail_screen.dart           # 도서 상세 & 독서 노트 타임라인
 │   │   ├── stats_dashboard_screen.dart       # 독서 통계 & 월별 차트 대시보드
-│   │   └── settings_backup_screen.dart       # 설정 & JSON 백업/복원 화면
+│   │   └── settings_backup_screen.dart       # 설정 & 클라우드 동기화 화면
 │   └── widgets/
 │       ├── book_card.dart                    # 서재 도서 카드 (커버, 프로그레스 바)
 │       ├── book_form_dialog.dart             # 도서 등록/수정 바텀시트

@@ -242,8 +242,19 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
     );
   }
 
+  bool _isSaving = false;
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isSaving || !_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    try {
+      await _save();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _save() async {
 
     final title = _titleController.text.trim();
     final author = _authorController.text.trim();
@@ -303,7 +314,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
           ),
         );
 
-        if (proceed != true) return;
+        if (proceed != true || !mounted) return;
       }
     }
 
@@ -344,6 +355,11 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
           );
     }
 
+    if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장에 실패했습니다. 다시 시도해 주세요.')),
+      );
+    }
     if (mounted && success) {
       Navigator.pop(context, true);
 
@@ -1005,7 +1021,7 @@ class _BookFormDialogState extends ConsumerState<BookFormDialog> {
                     const SizedBox(height: 24),
                     // 등록/수정 버튼
                     ElevatedButton.icon(
-                      onPressed: _submit,
+                      onPressed: _isSaving ? null : _submit,
                       icon: Icon(
                         isEdit
                             ? Icons.check_circle_rounded

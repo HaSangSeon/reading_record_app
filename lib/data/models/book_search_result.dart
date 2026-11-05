@@ -26,7 +26,7 @@ class BookSearchResult {
     int readPages = 0,
     bool isCompleted = false,
     double rating = 0.0,
-    String memo = '',
+    String? memo,
   }) {
     return Book(
       id: const Uuid().v4(),
@@ -40,7 +40,7 @@ class BookSearchResult {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       rating: rating,
-      memo: memo,
+      memo: memo ?? description,
     );
   }
 

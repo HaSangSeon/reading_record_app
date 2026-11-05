@@ -54,13 +54,6 @@ class HiveService {
     return Hive.box(AppConstants.settingsBoxName);
   }
 
-  /// 모든 로컬 데이터 삭제 (초기화 기능용)
-  Future<void> clearAllData() async {
-    _ensureInitialized();
-    await bookBox.clear();
-    await noteBox.clear();
-  }
-
   /// 데이터베이스 리소스 해제
   Future<void> close() async {
     await Hive.close();

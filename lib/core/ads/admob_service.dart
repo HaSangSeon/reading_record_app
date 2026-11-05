@@ -13,7 +13,9 @@ class AdMobService {
 
   /// Google AdMob SDK 초기화
   Future<void> init() async {
+    if (kIsWeb) return;
     try {
+      if (bannerAdUnitId.isEmpty && interstitialAdUnitId.isEmpty) return;
       await MobileAds.instance.initialize();
       debugPrint('[AdMobService] Google Mobile Ads 초기화 완료');
       loadInterstitialAd(); // 전면 광고 사전 로드
@@ -34,7 +36,7 @@ class AdMobService {
     if (Platform.isAndroid) {
       return 'ca-app-pub-3702899361747571/2586535773'; // Android 실제 배너 ID
     } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/2934735716';
+      return const String.fromEnvironment('IOS_ADMOB_BANNER_ID');
     }
     return '';
   }
@@ -51,7 +53,7 @@ class AdMobService {
     if (Platform.isAndroid) {
       return 'ca-app-pub-3702899361747571/9211653871'; // Android 실제 전면광고 ID
     } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/4411468910';
+      return const String.fromEnvironment('IOS_ADMOB_INTERSTITIAL_ID');
     }
     return '';
   }

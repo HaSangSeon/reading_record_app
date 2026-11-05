@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -19,6 +20,8 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
   bool _isAdLoaded = false;
   AdSize? _adSize;
   int? _currentWidth;
+  Timer? _retryTimer;
+  int _loadGeneration = 0;
 
   @override
   void didChangeDependencies() {
@@ -37,6 +40,8 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
     if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     if (!forceReload && _isAdLoaded && _bannerAd != null) return;
 
+    _retryTimer?.cancel();
+    final generation = ++_loadGeneration;
     final adUnitId = AdMobService.bannerAdUnitId;
     if (adUnitId.isEmpty) return;
 
@@ -54,7 +59,7 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
     final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width) ??
         await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
 
-    if (size == null) return;
+    if (!mounted || generation != _loadGeneration || size == null) return;
 
     _adSize = size;
     _bannerAd?.dispose();
@@ -70,7 +75,7 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
           debugPrint(
             '[BottomBannerAdWidget] 배너 로드 성공! 요청 size: ${_adSize?.width}x${_adSize?.height}, 실제 size: ${platformSize?.width}x${platformSize?.height}',
           );
-          if (mounted) {
+          if (mounted && generation == _loadGeneration) {
             setState(() {
               if (platformSize != null) {
                 _adSize = platformSize;
@@ -84,11 +89,15 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
             '[BottomBannerAdWidget] 적응형 배너 로드 실패: ${error.message} (code: ${error.code})',
           );
           ad.dispose();
-          if (mounted) {
+          if (mounted && generation == _loadGeneration) {
             setState(() {
               _bannerAd = null;
               _isAdLoaded = false;
             });
+            _retryTimer = Timer(
+              const Duration(seconds: 60),
+              () => _loadAdaptiveBannerAd(),
+            );
           }
         },
       ),
@@ -97,6 +106,7 @@ class _BottomBannerAdWidgetState extends State<BottomBannerAdWidget> {
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     _bannerAd?.dispose();
     super.dispose();
   }
